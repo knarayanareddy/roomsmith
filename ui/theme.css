@@ -1,0 +1,6 @@
+/* Project theme and page-specific wireframe composition. */
+    :root { color-scheme:dark; --canvas:#081a26; --surface:#102c3b; --surface-2:#173b4c; --text:#f3eee2; --muted:#bdd3d4; --line:#607c86; --primary:#d6a84f; --on-primary:#13232c; --accent:#7cc7c4; --on-accent:#10272d; --success:#9ad9b6; --warning:#f0c66d; --danger:#f2a19c; --info:#a6cbea; --focus:#f0c66d; --font-body:"Source Sans 3","Segoe UI",system-ui,sans-serif; --font-display:Marcellus,Georgia,serif; --tv-canvas:#081a26; --tv-surface:#102c3b; --tv-scene:#173b4c; --tv-text:#f3eee2; --tv-muted:#bdd3d4; --tv-line:#607c86; --tv-focus:#f0c66d; --shadow:0 14px 36px rgb(0 0 0 / 25%); }
+    .paper-clue { background:#f3eee2;color:#13232c; }
+    .paper-clue p,.paper-clue .muted { color:#40545c; }
+    .paper-clue .eyebrow { color:#53666d; }
+    .paper-clue .tv-button { background:transparent;color:#13232c;border-color:#60747b; }

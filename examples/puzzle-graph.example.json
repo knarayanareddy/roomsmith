@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "episode_id": "01000000000000000000000001",
+  "content_version": "0.1.0",
+  "title": "Light the Last Lighthouse — Draft Fixture",
+  "locale": "en-US",
+  "players": { "minimum": 1, "maximum": 4, "solo_path": true },
+  "age_minimum": 8,
+  "object_kit": [
+    {
+      "object_id": "red_cup",
+      "detector_class": "cup",
+      "color": "red",
+      "required": true,
+      "accessible_label": "Cup labeled red lens"
+    },
+    {
+      "object_id": "blue_cup",
+      "detector_class": "cup",
+      "color": "blue",
+      "required": true,
+      "accessible_label": "Cup labeled blue lens"
+    },
+    {
+      "object_id": "book",
+      "detector_class": "book",
+      "color": "neutral",
+      "required": true,
+      "accessible_label": "Book labeled archive"
+    }
+  ],
+  "zones": [
+    {
+      "zone_id": "zone_lens",
+      "mat_polygon_id": "poly_lens",
+      "accessible_label": "Lens zone marked with a circle"
+    },
+    {
+      "zone_id": "zone_archive",
+      "mat_polygon_id": "poly_archive",
+      "accessible_label": "Archive zone marked with a square"
+    }
+  ],
+  "assets": [
+    {
+      "asset_id": "asset_intro_scene",
+      "kind": "scene",
+      "uri": "content://episodes/lighthouse/scenes/intro.json",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "asset_id": "asset_shield_scene",
+      "kind": "scene",
+      "uri": "content://episodes/lighthouse/scenes/shield.json",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+    },
+    {
+      "asset_id": "asset_sequence_scene",
+      "kind": "scene",
+      "uri": "content://episodes/lighthouse/scenes/sequence.json",
+      "sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    {
+      "asset_id": "asset_arrangement_options",
+      "kind": "image",
+      "uri": "content://episodes/lighthouse/images/arrangement-options.png",
+      "sha256": "5555555555555555555555555555555555555555555555555555555555555555"
+    },
+    {
+      "asset_id": "asset_play_mat",
+      "kind": "play_mat",
+      "uri": "content://episodes/lighthouse/play-mat.pdf",
+      "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+    }
+  ],
+  "accessibility": {
+    "remote_fallback": true,
+    "no_timing_mode": true,
+    "color_independent_labels": true,
+    "reduced_motion": true,
+    "captions": true
+  },
+  "start_node_id": "node_intro",
+  "nodes": [
+    {
+      "id": "node_intro",
+      "type": "scene",
+      "scene_id": "scene_intro",
+      "dialogue_variant_ids": ["dialogue_intro_a"],
+      "next": "node_alignment"
+    },
+    {
+      "id": "node_alignment",
+      "type": "physical_puzzle",
+      "puzzle_id": "lighthouse_alignment",
+      "instruction": "Place the cup labeled red lens to the left of the archive book and hold it still.",
+      "requirement_mode": "all",
+      "requirements": [
+        {
+          "observation_type": "object_relation",
+          "subject": "red_cup",
+          "predicate": "left_of",
+          "target": "book",
+          "normalized_margin": 0.05,
+          "min_confidence": 0.7
+        }
+      ],
+      "hold_ms": 1000,
+      "timeout_seconds": 120,
+      "hint_after_seconds": [20, 45],
+      "fallback": {
+        "interaction": "remote_single_choice",
+        "prompt": "Which arrangement places the red lens to the left of the book?",
+        "options": [
+          {
+            "option_id": "option_red_left",
+            "label": "Red lens on the left, book on the right",
+            "image_asset_id": "asset_arrangement_options"
+          },
+          {
+            "option_id": "option_red_right",
+            "label": "Book on the left, red lens on the right",
+            "image_asset_id": "asset_arrangement_options"
+          }
+        ],
+        "correct_option_ids": ["option_red_left"]
+      },
+      "next": "node_shield_scene"
+    },
+    {
+      "id": "node_shield_scene",
+      "type": "scene",
+      "scene_id": "scene_shield",
+      "dialogue_variant_ids": ["dialogue_shield_a"],
+      "next": "node_shield"
+    },
+    {
+      "id": "node_shield",
+      "type": "physical_puzzle",
+      "puzzle_id": "raise_the_shield",
+      "instruction": "Raise an open palm and hold it comfortably, or use the remote shield control.",
+      "requirement_mode": "all",
+      "requirements": [
+        {
+          "observation_type": "gesture",
+          "subject": "hand",
+          "predicate": "open_palm",
+          "min_confidence": 0.75
+        }
+      ],
+      "hold_ms": 750,
+      "timeout_seconds": 120,
+      "hint_after_seconds": [20, 45],
+      "fallback": {
+        "interaction": "remote_hold",
+        "prompt": "Hold the shield control, or select it once in no-timing mode.",
+        "options": [
+          {
+            "option_id": "option_shield",
+            "label": "Raise the shield",
+            "image_asset_id": "asset_shield_scene"
+          }
+        ],
+        "correct_option_ids": ["option_shield"]
+      },
+      "next": "node_sequence_scene"
+    },
+    {
+      "id": "node_sequence_scene",
+      "type": "scene",
+      "scene_id": "scene_sequence",
+      "dialogue_variant_ids": ["dialogue_sequence_a"],
+      "next": "node_sequence"
+    },
+    {
+      "id": "node_sequence",
+      "type": "physical_puzzle",
+      "puzzle_id": "lens_archive_sequence",
+      "instruction": "Place the blue lens in the circle zone, then place the archive book in the square zone.",
+      "requirement_mode": "sequence",
+      "requirements": [
+        {
+          "observation_type": "object_relation",
+          "subject": "blue_cup",
+          "predicate": "inside_zone",
+          "target": "zone_lens",
+          "minimum_overlap": 0.6,
+          "min_confidence": 0.7
+        },
+        {
+          "observation_type": "object_relation",
+          "subject": "book",
+          "predicate": "inside_zone",
+          "target": "zone_archive",
+          "minimum_overlap": 0.6,
+          "min_confidence": 0.7,
+          "max_interval_after_previous_ms": 30000
+        }
+      ],
+      "hold_ms": 500,
+      "timeout_seconds": 120,
+      "hint_after_seconds": [20, 45],
+      "fallback": {
+        "interaction": "remote_single_choice",
+        "prompt": "Which action order opens the final beam?",
+        "options": [
+          {
+            "option_id": "option_lens_then_archive",
+            "label": "Blue lens first, archive book second",
+            "image_asset_id": "asset_sequence_scene"
+          },
+          {
+            "option_id": "option_archive_then_lens",
+            "label": "Archive book first, blue lens second",
+            "image_asset_id": "asset_sequence_scene"
+          }
+        ],
+        "correct_option_ids": ["option_lens_then_archive"]
+      },
+      "next": "node_end"
+    },
+    {
+      "id": "node_end",
+      "type": "end",
+      "case_report_scene_id": "scene_case_report"
+    }
+  ],
+  "director_policy": {
+    "live_hints_allowed": false,
+    "prompt_version": "director_v1",
+    "fallback_hint_set": "hints_lighthouse_v1",
+    "max_words_per_hint": 45
+  },
+  "review": {
+    "status": "draft",
+    "game_design_reviewer": "",
+    "safety_reviewer": "",
+    "accessibility_reviewer": "",
+    "reviewed_at": "2026-10-23T12:00:00.000Z",
+    "graph_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  }
+}

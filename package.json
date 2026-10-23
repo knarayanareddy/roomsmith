@@ -1,0 +1,38 @@
+{
+  "name": "@roomsmith/foundation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.17.1",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "dev": "tsx scripts/walking-observations.ts && ./scripts/kotlin.sh run",
+    "build": "tsc -p tsconfig.build.json && ./scripts/kotlin.sh build",
+    "lint": "eslint packages services scripts tests && prettier --check \"packages/**/*.ts\" \"services/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\" \"*.{json,mjs}\"",
+    "typecheck": "tsc --noEmit && ./scripts/kotlin.sh typecheck",
+    "test:unit": "vitest run tests/unit && ./scripts/kotlin.sh test",
+    "test:contract": "vitest run tests/contract",
+    "test:security": "vitest run tests/security && corepack pnpm audit --audit-level=moderate",
+    "validate:content": "tsx scripts/validate-content.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.18.6",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "eslint": "10.13.0",
+    "kotlin-compiler": "2.4.21",
+    "prettier": "3.6.2",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.0",
+    "vitest": "5.0.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "content_version": "0.1.0",
+  "status": "draft",
+  "game_design_review": { "status": "pending", "reviewer": null },
+  "safety_review": { "status": "pending", "reviewer": null },
+  "accessibility_review": { "status": "pending", "reviewer": null },
+  "solver_verification": { "status": "initial_remote_contract_checks_only", "full_path_enumeration": false },
+  "asset_verification": { "status": "pending", "verified_assets": 0 },
+  "publication_allowed": false
+}

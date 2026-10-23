@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.local/roomsmith/puzzle-graph.schema.json",
+  "title": "RoomSmith Physical Puzzle Graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "episode_id", "content_version", "title", "locale", "players", "age_minimum", "object_kit", "zones", "assets", "accessibility", "start_node_id", "nodes", "director_policy", "review"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "episode_id": { "$ref": "#/$defs/ulid" },
+    "content_version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "locale": { "const": "en-US" },
+    "players": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum", "maximum", "solo_path"],
+      "properties": {
+        "minimum": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "maximum": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "solo_path": { "const": true }
+      }
+    },
+    "age_minimum": { "type": "integer", "minimum": 8, "maximum": 17 },
+    "object_kit": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["object_id", "detector_class", "color", "required", "accessible_label"],
+        "properties": {
+          "object_id": { "enum": ["red_cup", "blue_cup", "book", "bottle", "spoon"] },
+          "detector_class": { "enum": ["cup", "book", "bottle", "spoon"] },
+          "color": { "enum": ["red", "blue", "neutral", "unknown"] },
+          "required": { "type": "boolean" },
+          "accessible_label": { "type": "string", "minLength": 1, "maxLength": 120 }
+        }
+      }
+    },
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["zone_id", "mat_polygon_id", "accessible_label"],
+        "properties": {
+          "zone_id": { "enum": ["zone_lens", "zone_archive", "zone_beacon"] },
+          "mat_polygon_id": { "type": "string", "pattern": "^poly_[a-z0-9_]+$" },
+          "accessible_label": { "type": "string", "minLength": 1, "maxLength": 120 }
+        }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["asset_id", "kind", "uri", "sha256"],
+        "properties": {
+          "asset_id": { "type": "string", "pattern": "^asset_[a-z0-9_]+$" },
+          "kind": { "enum": ["scene", "image", "audio", "caption", "font", "play_mat"] },
+          "uri": { "type": "string", "pattern": "^content://[a-zA-Z0-9_./-]+$" },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+        }
+      }
+    },
+    "accessibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["remote_fallback", "no_timing_mode", "color_independent_labels", "reduced_motion", "captions"],
+      "properties": {
+        "remote_fallback": { "const": true },
+        "no_timing_mode": { "const": true },
+        "color_independent_labels": { "const": true },
+        "reduced_motion": { "const": true },
+        "captions": { "const": true }
+      }
+    },
+    "start_node_id": { "$ref": "#/$defs/nodeId" },
+    "nodes": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/sceneNode" },
+          { "$ref": "#/$defs/puzzleNode" },
+          { "$ref": "#/$defs/branchNode" },
+          { "$ref": "#/$defs/endNode" }
+        ]
+      }
+    },
+    "director_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["live_hints_allowed", "prompt_version", "fallback_hint_set", "max_words_per_hint"],
+      "properties": {
+        "live_hints_allowed": { "type": "boolean" },
+        "prompt_version": { "type": "string", "pattern": "^director_v[0-9]+$" },
+        "fallback_hint_set": { "type": "string", "pattern": "^hints_[a-z0-9_]+$" },
+        "max_words_per_hint": { "type": "integer", "minimum": 5, "maximum": 60 }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "game_design_reviewer", "safety_reviewer", "accessibility_reviewer", "reviewed_at", "graph_sha256"],
+      "properties": {
+        "status": { "enum": ["draft", "approved"] },
+        "game_design_reviewer": { "type": "string", "maxLength": 160 },
+        "safety_reviewer": { "type": "string", "maxLength": 160 },
+        "accessibility_reviewer": { "type": "string", "maxLength": 160 },
+        "reviewed_at": { "$ref": "#/$defs/timestamp" },
+        "graph_sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    }
+  },
+  "$defs": {
+    "ulid": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "nodeId": { "type": "string", "pattern": "^node_[a-z0-9_]+$" },
+    "sceneNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "scene_id", "dialogue_variant_ids", "next"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "type": { "const": "scene" },
+        "scene_id": { "type": "string", "pattern": "^scene_[a-z0-9_]+$" },
+        "dialogue_variant_ids": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "private_clue": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role_id", "asset_id", "solo_reveal_after_seconds"],
+          "properties": {
+            "role_id": { "enum": ["navigator", "keeper", "observer"] },
+            "asset_id": { "type": "string", "pattern": "^asset_[a-z0-9_]+$" },
+            "solo_reveal_after_seconds": { "type": "integer", "minimum": 0, "maximum": 120 }
+          }
+        },
+        "next": { "$ref": "#/$defs/nodeId" }
+      }
+    },
+    "puzzleNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "puzzle_id", "instruction", "requirement_mode", "requirements", "hold_ms", "timeout_seconds", "hint_after_seconds", "fallback", "next"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "type": { "const": "physical_puzzle" },
+        "puzzle_id": { "enum": ["lighthouse_alignment", "raise_the_shield", "lens_archive_sequence"] },
+        "instruction": { "type": "string", "minLength": 1, "maxLength": 600 },
+        "requirement_mode": { "enum": ["all", "any", "sequence"] },
+        "requirements": { "type": "array", "minItems": 1, "maxItems": 4, "items": { "$ref": "#/$defs/predicate" } },
+        "hold_ms": { "type": "integer", "minimum": 0, "maximum": 3000 },
+        "timeout_seconds": { "type": ["integer", "null"], "minimum": 10, "maximum": 600 },
+        "hint_after_seconds": { "type": "array", "minItems": 2, "maxItems": 3, "items": { "type": "integer", "minimum": 5, "maximum": 300 } },
+        "fallback": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["interaction", "prompt", "options", "correct_option_ids"],
+          "properties": {
+            "interaction": { "enum": ["remote_single_choice", "remote_multi_select", "remote_hold"] },
+            "prompt": { "type": "string", "minLength": 1, "maxLength": 500 },
+            "options": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["option_id", "label", "image_asset_id"],
+                "properties": {
+                  "option_id": { "type": "string", "pattern": "^option_[a-z0-9_]+$" },
+                  "label": { "type": "string", "minLength": 1, "maxLength": 160 },
+                  "image_asset_id": { "type": "string", "pattern": "^asset_[a-z0-9_]+$" }
+                }
+              }
+            },
+            "correct_option_ids": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^option_[a-z0-9_]+$" } }
+          }
+        },
+        "next": { "$ref": "#/$defs/nodeId" }
+      }
+    },
+    "predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["observation_type", "subject", "predicate", "min_confidence"],
+      "properties": {
+        "observation_type": { "enum": ["object_relation", "object_presence", "gesture"] },
+        "subject": { "enum": ["red_cup", "blue_cup", "book", "bottle", "spoon", "hand"] },
+        "predicate": { "enum": ["left_of", "right_of", "above", "below", "inside_zone", "present", "open_palm", "thumbs_up"] },
+        "target": { "enum": ["red_cup", "blue_cup", "book", "bottle", "spoon", "zone_lens", "zone_archive", "zone_beacon"] },
+        "normalized_margin": { "type": "number", "minimum": 0, "maximum": 0.5 },
+        "minimum_overlap": { "type": "number", "minimum": 0, "maximum": 1 },
+        "min_confidence": { "type": "number", "minimum": 0.5, "maximum": 1 },
+        "max_interval_after_previous_ms": { "type": "integer", "minimum": 1000, "maximum": 120000 }
+      }
+    },
+    "branchNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "cases", "default"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "type": { "const": "branch" },
+        "cases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["variable", "operator", "value", "next"],
+            "properties": {
+              "variable": { "enum": ["session.player_count", "session.no_timing_mode", "puzzle.attempt_count"] },
+              "operator": { "enum": ["eq", "neq", "gt", "gte", "lt", "lte"] },
+              "value": { "type": ["string", "number", "boolean"] },
+              "next": { "$ref": "#/$defs/nodeId" }
+            }
+          }
+        },
+        "default": { "$ref": "#/$defs/nodeId" }
+      }
+    },
+    "endNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "case_report_scene_id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/nodeId" },
+        "type": { "const": "end" },
+        "case_report_scene_id": { "type": "string", "pattern": "^scene_[a-z0-9_]+$" }
+      }
+    }
+  }
+}

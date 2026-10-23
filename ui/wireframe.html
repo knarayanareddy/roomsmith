@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Static low-fidelity RoomSmith Fire TV and companion wireframes using fictional room and evidence data.">
+  <title>RoomSmith — Low-fidelity wireframes</title>
+  <link rel="stylesheet" href="../specs/ui/wireframes.css">
+  <link rel="stylesheet" href="./theme.css">
+  <script src="../specs/ui/wireframes.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to wireframes</a>
+  <svg class="sprite" aria-hidden="true">
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v4m0 3h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3V7Z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15m-5-5 5 5-5 5"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6V3Z"/><path d="M14 3v5h5M9 12h6m-6 4h6"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="m9 15 6-6m-7 1-2 2a4 4 0 0 0 6 6l2-2m2-6 2-2a4 4 0 0 0-6-6l-2 2"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 8a7 7 0 0 1 12-1l2 5M4 12l2 5a7 7 0 0 0 12-1"/></symbol>
+  </svg>
+  <header class="review-header"><div class="review-header__inner"><div class="review-brand"><strong>RoomSmith</strong><span>UI specification / 05</span></div><nav class="review-links" aria-label="Document links"><a href="../../../specs/ui/index.html">All projects</a><a href="./DESIGN.md">Design</a><a href="./tokens.json">Tokens</a><a href="./WIREFRAMES.md">Screen notes</a></nav></div></header>
+  <main class="review-main" id="main">
+    <div class="review-intro"><span class="eyebrow">Midnight lighthouse · Fire TV + companion</span><h1>Cinematic room. Deterministic outcome.</h1><p>Five low-fidelity screens separate exploration, evidence recognition, and puzzle completion. Camera uncertainty always has a visible manual route.</p><div class="prototype-notice"><strong>Static review artifact.</strong> Rooms, players, pairing codes, symbols, and confidence values are fictional. No camera, AR, multiplayer, or puzzle runtime is active.</div></div>
+    <nav aria-label="RoomSmith screens"><ul class="screen-nav"><li><a href="#lobby">01 · Lobby</a></li><li><a href="#room">02 · Room</a></li><li><a href="#puzzle">03 · Puzzle</a></li><li><a href="#verification">04 · Verification</a></li><li><a href="#completion">05 · Completion</a></li></ul></nav>
+
+    <section class="wireframe" id="lobby" aria-labelledby="lobby-title">
+      <div class="screen-heading"><div><span class="screen-number">SCREEN 01 / FIRE TV 1080P</span><h2 id="lobby-title">Session lobby</h2></div><p>Pairing is understandable and optional; player state remains visible when codes change.</p></div>
+      <div class="tv-frame"><div class="tv-stage tv-stage--scene">
+        <header class="tv-topbar"><div><span class="eyebrow">RoomSmith · Chapter 1</span><h3>The Last Light</h3><p>Restore the signal before the storm reaches the bay</p></div><span class="status status--info">Session RS-DEMO-24</span></header>
+        <div class="tv-content">
+          <section class="tv-panel"><span class="eyebrow">Crew</span><h4>2 players · 1 companion</h4><ul class="rule-list"><li class="cluster cluster--between"><span><strong>Player 1</strong><br><span class="muted small">Fire TV host</span></span><span class="status status--success"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Connected</span></li><li class="cluster cluster--between"><span><strong>Player 2</strong><br><span class="muted small">Android companion</span></span><span class="status status--success"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Connected</span></li></ul><div class="divider"></div><p>Difficulty: Standard · Hints available<br>Expected chapter: 20–30 minutes</p><button class="tv-button tv-button--primary" type="button" data-static>Start room with crew</button></section>
+          <section class="tv-panel"><span class="eyebrow">Add a companion · optional</span><h4>Scan or enter the short code</h4><div class="cluster" style="align-items:flex-start"><div class="qr-placeholder" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div><div class="code">B7R2K9</div><p class="small">Fictional · expires in 4 minutes</p><p class="small">QR is a nonfunctional placeholder.</p></div></div><div class="button-row"><button class="tv-button" type="button" data-static>Regenerate</button><a class="tv-button tv-button--focus" href="#room">Continue TV-only</a></div></section>
+        </div>
+        <div class="tv-action-rail"><span>Back · Room details</span><div class="cluster"><button class="tv-button" type="button" data-static>Accessibility</button><button class="tv-button" type="button" data-static>Leave session</button></div></div>
+      </div></div>
+      <details class="annotations" open><summary>Interaction and state annotations</summary><ul><li>TV-only play is visible at the same level as pairing.</li><li>Code expiry does not disconnect an already paired player.</li><li>Regeneration warns before invalidating a code other players may be entering.</li></ul></details>
+    </section>
+
+    <section class="wireframe" id="room" aria-labelledby="room-title">
+      <div class="screen-heading"><div><span class="screen-number">SCREEN 02 / FIRE TV 1080P</span><h2 id="room-title">Room exploration</h2></div><p>A fixed objective and action rail keep the cinematic scene navigable.</p></div>
+      <div class="tv-frame"><div class="tv-stage tv-stage--scene">
+        <header class="tv-topbar"><div><span class="eyebrow">The Last Light · Lantern room</span><h3>Restore the lighthouse signal</h3><p>Objective: find the keeper’s missing signal sequence</p></div><div class="cluster"><span class="status status--success">Companion connected</span><span class="numeric">Elapsed 08:42</span></div></header>
+        <div class="tv-content">
+          <div class="tv-scene" role="img" aria-label="Wireframe scene: a lighthouse lantern room at night with a logbook desk and brass compass"><div class="lighthouse" aria-hidden="true"></div><span class="scene-label">Authored 2.5D room placeholder · camera imagery is never used as room art</span></div>
+          <section class="tv-panel"><span class="eyebrow">Inspect</span><h4>Two objects catch the light</h4><button class="tv-button tv-choice tv-button--focus" type="button" data-static><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-file"/></svg><span>Keeper’s logbook<br><small class="muted">New · Focused</small></span></button><button class="tv-button tv-choice" type="button" data-static><span>Brass compass<br><small class="muted">Not yet inspected</small></span></button><div class="divider"></div><p class="small">Clues collected: 1 of 4<br>Current puzzle: not unlocked</p></section>
+        </div>
+        <div class="tv-caption">Rain moves across the glass. The logbook lies open beside the unlit signal lamp.</div>
+        <div class="tv-action-rail" style="margin-top:16px"><span>Remote: ← → choose · Select inspect</span><div class="cluster"><button class="tv-button" type="button" data-static>Back</button><button class="tv-button" type="button" data-static>Clues 1</button><a class="tv-button" href="#verification">Companion</a><button class="tv-button" type="button" data-static>Pause</button></div></div>
+      </div></div>
+      <details class="annotations"><summary>Interaction and state annotations</summary><ul><li>Focus has a persistent outline and text marker, not only a glow.</li><li>Ambient scene motion pauses during clue reading and puzzle entry.</li><li>Audio description covers the essential inspectable objects.</li></ul></details>
+    </section>
+
+    <section class="wireframe" id="puzzle" aria-labelledby="puzzle-title">
+      <div class="screen-heading"><div><span class="screen-number">SCREEN 03 / FIRE TV 1080P</span><h2 id="puzzle-title">Clue and deterministic puzzle</h2></div><p>Readable clue text and manual input remain available regardless of companion state.</p></div>
+      <div class="tv-frame"><div class="tv-stage tv-stage--scene">
+        <header class="tv-topbar"><div><span class="eyebrow">Signal puzzle · 0 attempts</span><h3>Set the three-symbol sequence</h3><p>Companion verification is optional</p></div><span class="status status--neutral">PuzzleEngine · awaiting input</span></header>
+        <div class="tv-content tv-content--even">
+          <article class="tv-panel paper-clue"><span class="eyebrow">Keeper’s log · 17 October</span><h4>“When the fog closes in…”</h4><p>Begin with the mark that points home. Follow it with the sign of the open sea. End where the night keeps its bearing.</p><p class="small">Three inspectable margin drawings accompany this passage in the authored clue. Their accessible descriptions are available through Inspect.</p><button class="tv-button" type="button" data-static>Inspect clue details</button></article>
+          <section class="tv-panel"><span class="eyebrow">Manual sequence</span><h4>Choose three symbols</h4><div class="symbol-grid"><button class="symbol-cell" type="button" data-static><span class="symbol-shape"></span><span>North star</span></button><button class="symbol-cell" type="button" data-static><span class="symbol-shape symbol-shape--circle"></span><span>Open sea</span></button><button class="symbol-cell" type="button" data-static><span class="symbol-shape symbol-shape--triangle"></span><span>Safe harbor</span></button></div><div class="divider"></div><div class="cluster cluster--between"><span>1 · Empty<br>2 · Empty<br>3 · Empty</span><span class="status status--warning">Incomplete</span></div><div class="button-row"><button class="tv-button tv-button--focus" type="button" data-static>Choose first symbol</button><a class="tv-button" href="#verification">Use companion</a></div></section>
+        </div>
+        <div class="tv-action-rail"><span>Wrong attempts do not reveal the answer</span><div class="cluster"><button class="tv-button" type="button" data-static>Hint 1</button><button class="tv-button" type="button" data-static>Reset sequence</button><button class="tv-button tv-button--primary" type="button" disabled aria-disabled="true">Submit incomplete sequence</button></div></div>
+      </div></div>
+      <details class="annotations"><summary>Interaction and state annotations</summary><ul><li>The wireframe intentionally does not print a solution.</li><li>Clue content is real text, not baked into an image.</li><li>Only the PuzzleEngine can transition this panel to solved.</li></ul></details>
+    </section>
+
+    <section class="wireframe" id="verification" aria-labelledby="verification-title">
+      <div class="screen-heading"><div><span class="screen-number">SCREEN 04 / ANDROID COMPANION</span><h2 id="verification-title">Uncertain symbol review</h2></div><p>Recognition proposes candidates; it cannot spend an attempt or solve the puzzle.</p></div>
+      <div class="phone-grid">
+        <div class="phone-frame"><div class="phone-screen">
+          <header class="phone-header"><div><span class="eyebrow">RoomSmith companion</span><h3>Symbol review</h3><p>The Last Light · Signal puzzle</p></div><span class="status status--success">Connected</span></header>
+          <div class="banner banner--warning"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-alert"/></svg><div><strong>Could not verify one symbol</strong><p>Choose a candidate, retry capture, or type it. Nothing has been submitted.</p></div></div>
+          <section class="phone-section"><div class="cluster cluster--between"><h4>Capture quality</h4><span class="status status--warning">Partial occlusion</span></div><div class="scene-placeholder" role="img" aria-label="Wireframe placeholder for a partially occluded symbol capture"><div><svg class="icon" aria-hidden="true" focusable="false" style="width:36px;height:36px;margin:auto"><use href="#i-camera"/></svg><strong style="display:block;margin-top:8px">CAPTURE PREVIEW PLACEHOLDER</strong><span class="small">No real camera frame</span></div></div></section>
+          <section class="phone-section"><h4>Ranked candidates</h4><div class="stack"><button class="panel panel--selected" type="button" data-static style="color:inherit;text-align:left;font:inherit"><span class="cluster cluster--between"><strong>North star</strong><span class="numeric">0.61</span></span><span class="small muted">Candidate 1 · below automatic-accept threshold</span></button><button class="panel" type="button" data-static style="color:inherit;text-align:left;font:inherit"><span class="cluster cluster--between"><strong>Compass rose</strong><span class="numeric">0.42</span></span><span class="small muted">Candidate 2 · different silhouette</span></button></div></section>
+          <div class="button-row"><button class="button" type="button" data-static>Accept selected candidate</button><button class="button button--secondary" type="button" data-static><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-refresh"/></svg>Retry capture</button><button class="button button--secondary" type="button" data-static>Type symbol</button></div>
+          <p class="micro muted">Accepting returns evidence to the TV review. Puzzle validation remains on Fire TV.</p>
+        </div></div>
+        <aside class="phone-note"><span class="eyebrow">State boundary</span><h3>Evidence, not authority</h3><ul class="rule-list small"><li><strong>Checking</strong><br><span class="muted">Elapsed state + cancel/manual route; no indefinite spinner-only feedback.</span></li><li><strong>Uncertain</strong><br><span class="muted">Candidates and confidence; no puzzle attempt.</span></li><li><strong>Accepted evidence</strong><br><span class="muted">Returns the chosen symbol for deterministic TV validation.</span></li><li><strong>Camera unavailable</strong><br><span class="muted">Typed symbol moves to the primary action.</span></li></ul></aside>
+      </div>
+      <details class="annotations"><summary>Interaction and state annotations</summary><ul><li>Rejecting candidates is not a failed puzzle attempt.</li><li>Confidence is visible but cannot replace player confirmation.</li><li>Private companion notes and raw captures are absent from the shared player status.</li></ul></details>
+    </section>
+
+    <section class="wireframe" id="completion" aria-labelledby="completion-title">
+      <div class="screen-heading"><div><span class="screen-number">SCREEN 05 / FIRE TV 1080P</span><h2 id="completion-title">Deterministic room completion</h2></div><p>The ending reflects PuzzleEngine state, not a model’s confidence or celebration animation.</p></div>
+      <div class="tv-frame"><div class="tv-stage tv-stage--scene">
+        <header class="tv-topbar"><div><span class="eyebrow">PuzzleEngine · solved state</span><h3>Signal restored</h3><p>The Last Light · Chapter 1 complete</p></div><span class="status status--success"><svg class="icon" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>3 of 3 puzzles solved</span></header>
+        <div class="tv-content">
+          <div class="tv-scene" role="img" aria-label="Wireframe scene: a steady lighthouse beam crosses a calm dark bay"><div class="lighthouse" aria-hidden="true"></div><div class="moon" aria-hidden="true"></div><span class="scene-label">Authored ending placeholder · static beam under reduced motion</span></div>
+          <section class="tv-panel"><span class="eyebrow">Chapter summary</span><h4>The bay can see the way home.</h4><dl class="definition-grid"><dt>Logbook clue</dt><dd>Recovered</dd><dt>Signal sequence</dt><dd>Validated on Fire TV</dd><dt>Companion evidence</dt><dd>1 reviewed symbol</dd><dt>Hints used</dt><dd>1 · no penalty</dd></dl><div class="divider"></div><p>The completion transition followed the deterministic solved event. Recognition confidence did not trigger it.</p></section>
+        </div>
+        <div class="tv-caption">The lamp turns once. Across the water, a harbor bell answers.</div>
+        <div class="tv-action-rail" style="margin-top:16px"><span>Progress saved in fictional session RS-DEMO-24</span><div class="cluster"><button class="tv-button" type="button" data-static>Exit room</button><button class="tv-button" type="button" data-static>Replay chapter</button><button class="tv-button tv-button--focus tv-button--primary" type="button" data-static>Continue to Chapter 2 <svg class="icon" aria-hidden="true" focusable="false"><use href="#i-arrow"/></svg></button></div></div>
+      </div></div>
+      <details class="annotations"><summary>Interaction and state annotations</summary><ul><li>Hint use is summarized without shame or score reduction.</li><li>Reduced motion uses a static beam and immediate text.</li><li>Host disconnection after authoritative completion does not turn the result back into uncertainty.</li></ul></details>
+    </section>
+    <p class="demo-status" id="demo-status" role="status" aria-live="polite"></p>
+  </main>
+  <footer class="review-footer">RoomSmith low-fidelity UI specification · Fictional fixtures only · No Fire TV, companion, camera, AR, or multiplayer runtime is active.</footer>
+</body>
+</html>
