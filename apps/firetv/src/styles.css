@@ -1,0 +1,214 @@
+/* RoomSmith Fire TV 1080p Simulator & Animated Progressive Clue Banner Styles */
+
+:root {
+  --clue-level-1-bg: linear-gradient(135deg, rgba(16, 44, 59, 0.96), rgba(23, 59, 76, 0.96));
+  --clue-level-1-border: #7cc7c4;
+  --clue-level-1-badge: #7cc7c4;
+  --clue-level-1-badge-text: #081a26;
+
+  --clue-level-2-bg: linear-gradient(135deg, rgba(28, 43, 56, 0.97), rgba(48, 56, 38, 0.97));
+  --clue-level-2-border: #d6a84f;
+  --clue-level-2-badge: #d6a84f;
+  --clue-level-2-badge-text: #13232c;
+
+  --clue-level-3-bg: linear-gradient(135deg, rgba(35, 38, 28, 0.98), rgba(19, 54, 46, 0.98));
+  --clue-level-3-border: #9ad9b6;
+  --clue-level-3-badge: #9ad9b6;
+  --clue-level-3-badge-text: #0b221a;
+}
+
+@keyframes clueBannerSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-18px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes clueBannerPulseGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 14px 36px rgba(0, 0, 0, 0.52),
+      0 0 0 1px rgba(240, 198, 109, 0.28);
+  }
+  50% {
+    box-shadow:
+      0 18px 44px rgba(0, 0, 0, 0.65),
+      0 0 18px 2px rgba(240, 198, 109, 0.45);
+  }
+}
+
+.clue-banner-overlay {
+  position: relative;
+  z-index: 40;
+  margin: 0 0 22px;
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+.clue-banner-overlay.is-hidden {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.clue-banner-overlay.is-visible {
+  display: block;
+  opacity: 1;
+}
+
+.clue-banner {
+  border-radius: 14px;
+  padding: 18px 22px;
+  border: 2px solid var(--clue-level-1-border);
+  background: var(--clue-level-1-bg);
+  color: #f3eee2;
+  animation:
+    clueBannerSlideIn 280ms cubic-bezier(0.2, 0.85, 0.3, 1),
+    clueBannerPulseGlow 3.2s ease-in-out infinite;
+}
+
+.clue-banner--level-1 {
+  background: var(--clue-level-1-bg);
+  border-color: var(--clue-level-1-border);
+}
+
+.clue-banner--level-2 {
+  background: var(--clue-level-2-bg);
+  border-color: var(--clue-level-2-border);
+}
+
+.clue-banner--level-3 {
+  background: var(--clue-level-3-bg);
+  border-color: var(--clue-level-3-border);
+}
+
+.clue-banner__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.clue-banner__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--clue-level-1-badge);
+  color: var(--clue-level-1-badge-text);
+}
+
+.clue-banner--level-2 .clue-banner__badge {
+  background: var(--clue-level-2-badge);
+  color: var(--clue-level-2-badge-text);
+}
+
+.clue-banner--level-3 .clue-banner__badge {
+  background: var(--clue-level-3-badge);
+  color: var(--clue-level-3-badge-text);
+}
+
+.clue-banner__steps {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.clue-banner__step {
+  font-size: 0.78rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(189, 211, 212, 0.38);
+  color: #bdd3d4;
+  opacity: 0.72;
+}
+
+.clue-banner__step--active {
+  opacity: 1;
+  font-weight: 700;
+  color: #f3eee2;
+  border-color: #f0c66d;
+  background: rgba(214, 168, 79, 0.22);
+}
+
+.clue-banner__text {
+  margin: 8px 0 14px;
+  font-size: 1.15rem;
+  line-height: 1.45;
+  font-weight: 600;
+  color: #f3eee2;
+}
+
+.clue-banner__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.clue-banner__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.clue-banner__btn {
+  background: rgba(8, 26, 38, 0.78);
+  color: #f3eee2;
+  border: 2px solid #607c86;
+  border-radius: 8px;
+  padding: 8px 14px;
+  min-height: 44px;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.clue-banner__btn--focused,
+.clue-banner__btn:focus-visible {
+  border-color: #f0c66d;
+  outline: 2px solid #f0c66d;
+  outline-offset: 2px;
+  background: #d6a84f;
+  color: #13232c;
+}
+
+.clue-banner__dpad-hint {
+  font-size: 0.84rem;
+  color: #bdd3d4;
+}
+
+body.reduced-motion .clue-banner,
+body.reduced-motion .clue-banner-overlay {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clue-banner,
+  .clue-banner-overlay {
+    animation: none !important;
+    transition: none !important;
+  }
+}

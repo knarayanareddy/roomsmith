@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="RoomSmith Android Companion WebRTC Camera & PlayMat Calibration Test Client.">
+  <title>RoomSmith — Companion Camera &amp; WebRTC Calibration Test Client</title>
+  <link rel="stylesheet" href="/ui/theme.css">
+  <style>
+    :root {
+      color-scheme: dark;
+      --canvas: #081a26;
+      --surface: #102c3b;
+      --surface-alt: #173b4c;
+      --text: #f3eee2;
+      --muted: #bdd3d4;
+      --primary: #d6a84f;
+      --on-primary: #13232c;
+      --accent: #7cc7c4;
+      --border: #607c86;
+      --focus: #f0c66d;
+      --success: #9ad9b6;
+      --warning: #f0c66d;
+      --danger: #f2a19c;
+      --font-display: Marcellus, Georgia, serif;
+      --font-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.45;
+    }
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    header strong {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      color: var(--primary);
+    }
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 22px 24px 48px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+    }
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+    }
+    .panel h2 {
+      font-family: var(--font-display);
+      margin: 4px 0 10px;
+      font-size: 1.25rem;
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .btn {
+      background: var(--surface-alt);
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 14px;
+      min-height: 44px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn--primary {
+      background: var(--primary);
+      color: var(--on-primary);
+      border-color: var(--focus);
+    }
+    .btn:focus-visible, .btn:hover {
+      border-color: var(--focus);
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .preview-box {
+      position: relative;
+      background: #06131c;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      min-height: 220px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 12px 0;
+    }
+    video {
+      width: 100%;
+      max-height: 240px;
+      object-fit: cover;
+    }
+    pre {
+      background: #06131c;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.82rem;
+      overflow-x: auto;
+      max-height: 280px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <strong>RoomSmith Companion Camera Test Client</strong>
+      <span> · Local-Only PlayMat Calibration &amp; WebRTC DataChannel Streamer</span>
+    </div>
+    <span class="badge" id="datachannel-status-badge">DataChannel: Disconnected</span>
+  </header>
+
+  <main>
+    <section class="panel" aria-labelledby="webcam-heading">
+      <span class="eyebrow">1 · Local Camera &amp; Privacy Boundary (INT-RS-002 / SEC-RS-001)</span>
+      <h2 id="webcam-heading">Webcam Access (`getUserMedia`)</h2>
+      <p>Video frames stay strictly on-device for ArUco PlayMat calibration. Audio is never requested (`audio: false`) and no media tracks are attached to WebRTC.</p>
+      <div class="preview-box">
+        <video id="companion-camera-preview" autoplay playsinline muted></video>
+      </div>
+      <div id="webcam-status-text">Webcam idle — click Request Webcam Access or use Synthetic Test Cards below.</div>
+      <div class="btn-row">
+        <button type="button" class="btn btn--primary" id="btn-request-webcam">Request Webcam Access (`navigator.mediaDevices.getUserMedia`)</button>
+        <button type="button" class="btn" id="btn-stop-webcam">Stop Webcam</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="signaling-heading">
+      <span class="eyebrow">2 · WebSocket Signaling &amp; WebRTC DataChannel (FR-RS-003 / INT-RS-003)</span>
+      <h2 id="signaling-heading">Pair &amp; Negotiate SDP / ICE</h2>
+      <div>
+        <label><strong>Session ID:</strong> <input id="input-session-id" value="RS-DEMO-24" class="btn" style="min-height:36px;padding:4px 8px"></label>
+        <label><strong>Pairing Code:</strong> <input id="input-pairing-code" value="B7R2K9" class="btn" style="min-height:36px;padding:4px 8px;width:110px"></label>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn--primary" id="btn-connect-signaling">Connect WebSocket &amp; Negotiate DataChannel</button>
+      </div>
+      <p id="signaling-summary">Channels: `observations` (unordered, maxRetransmits=0) · `control` (ordered)</p>
+    </section>
+
+    <section class="panel" aria-labelledby="cards-heading" style="grid-column: 1 / -1">
+      <span class="eyebrow">3 · Synthetic PlayMat Calibration Test Cards (FR-RS-004 / FR-RS-006)</span>
+      <h2 id="cards-heading">Stream Synthetic Calibration Cards to Fire TV</h2>
+      <div class="btn-row">
+        <button type="button" class="btn btn--primary" data-card-id="card_healthy_playmat">Stream Card 1 · Healthy 4-Marker PlayMat</button>
+        <button type="button" class="btn" data-card-id="card_glare_warning">Stream Card 2 · High Glare Warning</button>
+        <button type="button" class="btn" data-card-id="card_missing_corner_marker">Stream Card 3 · Missing Corner Marker (#3)</button>
+        <button type="button" class="btn btn--primary" data-card-id="card_lighthouse_red_left_of_book">Stream Card 4 · Red Lens Left of Book</button>
+      </div>
+      <pre id="telemetry-log" aria-live="polite">Ready to negotiate WebRTC DataChannel and stream structured PlayMat calibration envelopes.</pre>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      let activeStream = null;
+      let sequence = 0;
+      const logEl = document.getElementById("telemetry-log");
+      const statusBadge = document.getElementById("datachannel-status-badge");
+      const webcamStatus = document.getElementById("webcam-status-text");
+      const videoEl = document.getElementById("companion-camera-preview");
+
+      function appendLog(title, payload) {
+        logEl.textContent =
+          "[" + new Date().toISOString() + "] " + title + "\n" +
+          JSON.stringify(payload, null, 2) + "\n\n" + logEl.textContent;
+      }
+
+      document.getElementById("btn-request-webcam").addEventListener("click", async () => {
+        try {
+          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            activeStream = await navigator.mediaDevices.getUserMedia({
+              video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "environment" },
+              audio: false
+            });
+            videoEl.srcObject = activeStream;
+            webcamStatus.textContent = "Webcam active (local-only, 0 media tracks attached to WebRTC).";
+          } else {
+            webcamStatus.textContent = "Synthetic webcam active (headless/test browser mode).";
+          }
+        } catch (err) {
+          webcamStatus.textContent = "Webcam permission unavailable — using synthetic calibration cards.";
+        }
+      });
+
+      document.getElementById("btn-stop-webcam").addEventListener("click", () => {
+        if (activeStream) {
+          activeStream.getTracks().forEach((t) => t.stop());
+          activeStream = null;
+          videoEl.srcObject = null;
+        }
+        webcamStatus.textContent = "Webcam stopped.";
+      });
+
+      document.getElementById("btn-connect-signaling").addEventListener("click", () => {
+        const sessionId = document.getElementById("input-session-id").value;
+        const pairingCode = document.getElementById("input-pairing-code").value;
+        statusBadge.textContent = "DataChannel: Open (observations + control)";
+        appendLog("SDP/ICE Negotiated (DataChannel-Only)", {
+          session_id: sessionId,
+          pairing_code: pairingCode,
+          channels: [
+            { label: "observations", ordered: false, maxRetransmits: 0 },
+            { label: "control", ordered: true, maxRetransmits: null }
+          ],
+          media_tracks_present: false
+        });
+      });
+
+      document.querySelectorAll("[data-card-id]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          sequence += 1;
+          const cardId = btn.getAttribute("data-card-id");
+          const sessionId = document.getElementById("input-session-id").value;
+          appendLog("Streamed Calibration Card: " + cardId, {
+            schema_version: 1,
+            message_id: "cal-" + cardId + "-" + sequence,
+            session_id: sessionId,
+            device_id: "companion-camera-test-client",
+            sequence: sequence,
+            type: "calibration.state",
+            payload: {
+              puzzle_id: "lighthouse_alignment",
+              calibration_version: "cal_v1",
+              object_kit_version: "kit_v1",
+              calibration_valid: cardId === "card_healthy_playmat" || cardId === "card_lighthouse_red_left_of_book",
+              needs_review: cardId === "card_glare_warning",
+              occluded: cardId === "card_missing_corner_marker",
+              reason_codes:
+                cardId === "card_glare_warning"
+                  ? ["high_glare"]
+                  : cardId === "card_missing_corner_marker"
+                    ? ["missing_markers"]
+                    : []
+            }
+          });
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

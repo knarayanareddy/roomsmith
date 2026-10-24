@@ -45,6 +45,23 @@ const server = createServer((req, res) => {
     return;
   }
 
+  if (url.pathname === "/apps/firetv/src/styles.css") {
+    const css = readFileSync(resolvePath("apps/firetv/src/styles.css"), "utf8");
+    res.writeHead(200, { "Content-Type": "text/css; charset=utf-8" });
+    res.end(css);
+    return;
+  }
+
+  if (
+    url.pathname === "/companion" ||
+    url.pathname === "/apps/companion/index.html"
+  ) {
+    const html = readFileSync(resolvePath("apps/companion/index.html"), "utf8");
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(html);
+    return;
+  }
+
   if (url.pathname === "/api/state" && req.method === "GET") {
     res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify(simulator.getState()));

@@ -7,6 +7,7 @@
   <title>RoomSmith — Fire TV Escape Room Web Simulator</title>
   <link rel="stylesheet" href="/specs/ui/wireframes.css">
   <link rel="stylesheet" href="/ui/theme.css">
+  <link rel="stylesheet" href="/apps/firetv/src/styles.css">
   <style>
     :root {
       color-scheme: dark;
@@ -324,6 +325,27 @@
   </header>
 
   <main class="sim-main" id="main">
+    <aside class="clue-banner-overlay is-hidden" id="clue-banner-overlay" data-testid="clue-banner-overlay" role="status" aria-live="polite">
+      <div class="clue-banner clue-banner--level-1" id="clue-banner-box">
+        <div class="clue-banner__header">
+          <span class="clue-banner__badge" id="clue-banner-badge">Level 1 · Subtle Nudge</span>
+          <ol class="clue-banner__steps" aria-label="Progressive clue ladder">
+            <li class="clue-banner__step clue-banner__step--active" data-step-level="1">1. Subtle Nudge</li>
+            <li class="clue-banner__step" data-step-level="2">2. Directional Clue</li>
+            <li class="clue-banner__step" data-step-level="3">3. Direct Solution Guide</li>
+          </ol>
+        </div>
+        <p class="clue-banner__text" id="clue-banner-text"></p>
+        <div class="clue-banner__footer">
+          <div class="clue-banner__controls">
+            <button type="button" class="clue-banner__btn clue-banner__btn--focused" id="btn-banner-next" data-dpad-action="request_next">[D-Pad Up / H] Next Progressive Clue</button>
+            <button type="button" class="clue-banner__btn" id="btn-banner-dismiss" data-dpad-action="dismiss">[D-Pad Down / Back] Dismiss Banner</button>
+          </div>
+          <span class="clue-banner__dpad-hint">Remote D-Pad: Left/Right switch · Up/H request clue · Down/Back dismiss</span>
+        </div>
+      </div>
+    </aside>
+
     <div class="puzzle-stepper" aria-label="Three Episode Puzzles">
       <button type="button" class="station-card active" data-puzzle-card="lighthouse">
         <span class="eyebrow">Puzzle 1 · Lighthouse</span>
@@ -652,7 +674,8 @@
           correct_option_ids: ["option_red_left"],
           authored_hints: [
             "Check the lens label, then compare its position with the book.",
-            "Place the red lens cup on the left side of the archive book or pick the left-hand remote option."
+            "Place the red lens cup on the left side of the archive book or pick the left-hand remote option.",
+            "Direct guide: set the red lens cup to the left of the book for one second, or select option_red_left."
           ]
         },
         {
@@ -672,7 +695,8 @@
           correct_option_ids: ["option_shield"],
           authored_hints: [
             "Use an open palm held steady in frame or hold the remote gearbox control.",
-            "Hold the gearbox shield button for 750 ms, or enable no-timing mode for a single press."
+            "Hold the gearbox shield button for 750 ms, or enable no-timing mode for a single press.",
+            "Direct guide: raise an open palm for 750 ms in camera view, or hold option_shield on the remote."
           ]
         },
         {
@@ -693,7 +717,8 @@
           correct_option_ids: ["option_lens_then_archive"],
           authored_hints: [
             "Start with the circle lens zone before placing the archive book in the square zone.",
-            "Place the blue lens in zone_lens first, then place the book in zone_archive to complete the PowerGrid circuit."
+            "Place the blue lens in zone_lens first, then place the book in zone_archive to complete the PowerGrid circuit.",
+            "Direct guide: hold blue_cup in zone_lens for 500 ms, then hold book in zone_archive for 500 ms."
           ]
         }
       ];
@@ -719,6 +744,9 @@
         selectedCandidate: "north_star",
         hintsUsed: { lighthouse_alignment: 0, raise_the_shield: 0, lens_archive_sequence: 0 },
         lastHint: null,
+        bannerVisible: false,
+        bannerLevel: 1,
+        bannerFocus: "request_next",
         guidance: "Configure session or jump to Puzzle 1 (Lighthouse), Puzzle 2 (Gearbox), or Puzzle 3 (PowerGrid).",
         elapsedMs: 1200
       };
@@ -823,6 +851,35 @@
           hintBox.textContent = "Director Hint: " + state.lastHint;
         } else {
           hintBox.hidden = true;
+        }
+
+        const overlay = document.getElementById("clue-banner-overlay");
+        const bannerBox = document.getElementById("clue-banner-box");
+        const bannerBadge = document.getElementById("clue-banner-badge");
+        const bannerText = document.getElementById("clue-banner-text");
+        const btnNext = document.getElementById("btn-banner-next");
+        const btnDismiss = document.getElementById("btn-banner-dismiss");
+        if (overlay && bannerBox && bannerBadge && bannerText) {
+          overlay.classList.toggle("is-visible", Boolean(state.bannerVisible && state.lastHint));
+          overlay.classList.toggle("is-hidden", !(state.bannerVisible && state.lastHint));
+          bannerBox.className = "clue-banner clue-banner--level-" + state.bannerLevel;
+          bannerBadge.textContent =
+            state.bannerLevel === 1
+              ? "Level 1 · Subtle Nudge"
+              : state.bannerLevel === 2
+                ? "Level 2 · Directional Clue"
+                : "Level 3 · Direct Solution Guide";
+          bannerText.textContent = state.lastHint || "";
+          overlay.querySelectorAll("[data-step-level]").forEach((el) => {
+            const lvl = Number(el.getAttribute("data-step-level"));
+            el.classList.toggle("clue-banner__step--active", lvl === state.bannerLevel);
+          });
+          if (btnNext) {
+            btnNext.classList.toggle("clue-banner__btn--focused", state.bannerFocus === "request_next");
+          }
+          if (btnDismiss) {
+            btnDismiss.classList.toggle("clue-banner__btn--focused", state.bannerFocus === "dismiss");
+          }
         }
 
         const optionsContainer = document.getElementById("remote-fallback-options");
@@ -1025,15 +1082,44 @@
         }
       });
 
-      document.getElementById("btn-request-hint").addEventListener("click", () => {
+      function requestProgressiveClue() {
         const p = currentPuzzle();
         if (!p) return;
         const used = state.hintsUsed[p.puzzle_id] || 0;
         const nextLevel = Math.min(used + 1, p.authored_hints.length);
         state.hintsUsed[p.puzzle_id] = nextLevel;
         state.lastHint = p.authored_hints[nextLevel - 1];
+        state.bannerVisible = true;
+        state.bannerLevel = nextLevel;
+        state.bannerFocus = nextLevel < 3 ? "request_next" : "dismiss";
         state.guidance = "Bounded Director Hint (Level " + nextLevel + ") delivered without mutating puzzle state.";
         render();
+      }
+
+      function dismissClueBanner() {
+        state.bannerVisible = false;
+        state.guidance = "Clue banner dismissed via remote control.";
+        render();
+      }
+
+      document.getElementById("btn-request-hint").addEventListener("click", requestProgressiveClue);
+      document.getElementById("btn-banner-next").addEventListener("click", requestProgressiveClue);
+      document.getElementById("btn-banner-dismiss").addEventListener("click", dismissClueBanner);
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowLeft") {
+          state.bannerFocus = "request_next";
+          render();
+        } else if (event.key === "ArrowRight") {
+          state.bannerFocus = "dismiss";
+          render();
+        } else if (event.key === "ArrowUp" || event.key === "h" || event.key === "H") {
+          requestProgressiveClue();
+        } else if (event.key === "ArrowDown" || event.key === "Escape") {
+          if (state.bannerVisible) {
+            dismissClueBanner();
+          }
+        }
       });
 
       document.getElementById("btn-go-verify").addEventListener("click", () => setScreen("verification"));
