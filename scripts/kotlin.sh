@@ -17,8 +17,15 @@ if [[ -z "$JAVA" || ! -x "$JAVA" ]]; then
   exit 1
 fi
 
-mapfile -t MAIN_SOURCES < <(find "$ROOT/packages/puzzle-engine/src/main/kotlin" -name '*.kt' | sort)
-mapfile -t TEST_SOURCES < <(find "$ROOT/packages/puzzle-engine/src/test/kotlin" -name '*.kt' | sort)
+MAIN_SOURCES=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && MAIN_SOURCES+=("$line")
+done < <(find "$ROOT/packages/puzzle-engine/src/main/kotlin" -name '*.kt' | sort)
+
+TEST_SOURCES=()
+while IFS= read -r line; do
+  [[ -n "$line" ]] && TEST_SOURCES+=("$line")
+done < <(find "$ROOT/packages/puzzle-engine/src/test/kotlin" -name '*.kt' | sort)
 mkdir -p "$ROOT/build"
 COMMAND="${1:-}"
 case "$COMMAND" in
