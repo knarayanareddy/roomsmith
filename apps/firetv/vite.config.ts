@@ -4,10 +4,16 @@ export interface ViteServerConfig {
   strictPort?: boolean;
 }
 
+export interface ViteStaticAssetCopy {
+  src: string;
+  dest: string;
+}
+
 export interface ViteBuildConfig {
   outDir: string;
   emptyOutDir: boolean;
   assetsDir: string;
+  copyAssets: readonly ViteStaticAssetCopy[];
 }
 
 export interface RoomSmithViteConfig {
@@ -46,6 +52,12 @@ export const viteConfig: RoomSmithViteConfig = defineRoomSmithViteConfig({
     outDir: "../../dist/pages",
     emptyOutDir: true,
     assetsDir: "assets",
+    copyAssets: [
+      {
+        src: "../../docs/media/roomsmith-demo.webm",
+        dest: "media/roomsmith-demo.webm",
+      },
+    ],
   },
 });
 

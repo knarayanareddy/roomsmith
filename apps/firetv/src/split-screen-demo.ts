@@ -20,6 +20,28 @@ export type CompanionPerspectivePreset =
   | "occluded_corner"
   | "aligned_playmat";
 
+export type SplitScreenViewMode = "video" | "simulator";
+
+export const SPLIT_SCREEN_MODE_TOGGLE_TEXT =
+  "Mode: [🎥 Watch Full Escape Walkthrough] [🧩 Play Split-Screen Simulator]";
+
+export const WATCH_WALKTHROUGH_BUTTON_TEXT =
+  "[🎥 Watch Full Escape Walkthrough]";
+
+export const PLAY_SIMULATOR_BUTTON_TEXT = "[🧩 Play Split-Screen Simulator]";
+
+export const WALKTHROUGH_VIDEO_ASSET_PATH = "/media/roomsmith-demo.webm";
+
+export const WALKTHROUGH_VIDEO_SIZE_KB = 126;
+
+export interface WalkthroughVideoViewState {
+  active: boolean;
+  src: string;
+  size_kb: number;
+  toggle_bar_text: string;
+  description: string;
+}
+
 export interface InMemoryWebRtcTelemetry {
   connected: boolean;
   data_channel_state: "open" | "closed";
@@ -33,6 +55,9 @@ export interface InMemoryWebRtcTelemetry {
 }
 
 export interface SplitScreenDemoState {
+  mode: SplitScreenViewMode;
+  mode_toggle_text: string;
+  walkthrough_video: WalkthroughVideoViewState;
   companion: {
     device_id: string;
     perspective_preset: CompanionPerspectivePreset;
@@ -150,11 +175,14 @@ const PERSPECTIVE_PRESET_MAP: Readonly<
 /**
  * Unified Split-Screen Escape Room Demo controller pairing the Companion
  * living-room perspective view (left side) and Fire TV 1080p puzzle display
- * (right side) over `InMemoryWebRtcMockTransport`.
+ * (right side) over `InMemoryWebRtcMockTransport`, with a quick-switch toggle
+ * between the interactive simulator and the recorded `roomsmith-demo.webm`
+ * walkthrough video.
  */
 export class SplitScreenEscapeRoomDemo {
   private readonly simulator: FireTvWebSimulator;
   private readonly transport: InMemoryWebRtcMockTransport;
+  private mode: SplitScreenViewMode = "simulator";
   private perspectivePreset: CompanionPerspectivePreset = "skewed_uncalibrated";
   private activePlacementLabel = "Awaiting living room PlayMat alignment";
   private sequence = 0;
@@ -177,6 +205,52 @@ export class SplitScreenEscapeRoomDemo {
 
   getTransport(): InMemoryWebRtcMockTransport {
     return this.transport;
+  }
+
+  getMode(): SplitScreenViewMode {
+    return this.mode;
+  }
+
+  /**
+   * Switches between `"video"` (`[🎥 Watch Full Escape Walkthrough]`) and
+   * `"simulator"` (`[🧩 Play Split-Screen Simulator]`).
+   */
+  setMode(mode: SplitScreenViewMode): SplitScreenDemoState {
+    this.mode = mode;
+    return this.getState();
+  }
+
+  toggleMode(): SplitScreenDemoState {
+    this.mode = this.mode === "simulator" ? "video" : "simulator";
+    return this.getState();
+  }
+
+  /**
+   * Renders the quick-switch toggle header and active view markup
+   * (`roomsmith-demo.webm` video player when `mode === "video"`, or the
+   * interactive split-screen simulator container when `mode === "simulator"`).
+   */
+  renderQuickSwitchViewHtml(basePath = "/roomsmith/"): string {
+    const normalizedBase = basePath.endsWith("/") ? basePath : `${basePath}/`;
+    const videoSrc = `${normalizedBase}media/roomsmith-demo.webm`;
+    const isVideo = this.mode === "video";
+    return [
+      `<section class="demo-mode-bar" data-testid="demo-mode-bar">`,
+      `  <span class="demo-mode-bar__text">${SPLIT_SCREEN_MODE_TOGGLE_TEXT}</span>`,
+      `  <div class="demo-mode-bar__buttons">`,
+      `    <button type="button" data-demo-mode="video" aria-pressed="${String(isVideo)}">${WATCH_WALKTHROUGH_BUTTON_TEXT}</button>`,
+      `    <button type="button" data-demo-mode="simulator" aria-pressed="${String(!isVideo)}">${PLAY_SIMULATOR_BUTTON_TEXT}</button>`,
+      `  </div>`,
+      `</section>`,
+      isVideo
+        ? [
+            `<section class="walkthrough-video-panel" data-testid="walkthrough-video-panel">`,
+            `  <p>126 KB roomsmith-demo.webm showcasing the synchronized Fire TV screen and companion camera perspective alignment</p>`,
+            `  <video controls autoplay loop muted playsinline src="${videoSrc}" data-video-size-kb="${WALKTHROUGH_VIDEO_SIZE_KB}"></video>`,
+            `</section>`,
+          ].join("\n")
+        : `<section class="split-screen-simulator-active" data-testid="split-screen-simulator-active"></section>`,
+    ].join("\n");
   }
 
   private nextSequence(): number {
@@ -389,6 +463,16 @@ export class SplitScreenEscapeRoomDemo {
   getState(): SplitScreenDemoState {
     const tvState = this.simulator.getState();
     return {
+      mode: this.mode,
+      mode_toggle_text: SPLIT_SCREEN_MODE_TOGGLE_TEXT,
+      walkthrough_video: {
+        active: this.mode === "video",
+        src: WALKTHROUGH_VIDEO_ASSET_PATH,
+        size_kb: WALKTHROUGH_VIDEO_SIZE_KB,
+        toggle_bar_text: SPLIT_SCREEN_MODE_TOGGLE_TEXT,
+        description:
+          "126 KB roomsmith-demo.webm showcasing the synchronized Fire TV screen and companion camera perspective alignment",
+      },
       companion: {
         device_id: "companion-split-screen",
         perspective_preset: this.perspectivePreset,

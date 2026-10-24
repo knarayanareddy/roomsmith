@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 import { createCompanionServer } from "../../apps/companion/src/index.js";
 import {
   InMemoryWebRtcMockTransport,
+  SPLIT_SCREEN_MODE_TOGGLE_TEXT,
   SplitScreenEscapeRoomDemo,
+  WALKTHROUGH_VIDEO_ASSET_PATH,
+  WALKTHROUGH_VIDEO_SIZE_KB,
   viteConfig,
 } from "../../apps/firetv/src/index.js";
 import { createFireTvServer } from "../../apps/firetv/src/server.js";
@@ -74,8 +77,14 @@ describe("Single-command orchestration, split-screen demo, and walkthrough recor
     }
   });
 
-  it("configures apps/firetv/vite.config.ts with base '/roomsmith/' and builds GitHub Pages bundle", () => {
+  it("configures apps/firetv/vite.config.ts with base '/roomsmith/' and copies roomsmith-demo.webm to /media/", () => {
     expect(viteConfig.base).toBe("/roomsmith/");
+    expect(viteConfig.build.copyAssets).toEqual([
+      {
+        src: "../../docs/media/roomsmith-demo.webm",
+        dest: "media/roomsmith-demo.webm",
+      },
+    ]);
     const pagesWorkflowPath = resolve(
       process.cwd(),
       ".github/workflows/pages.yml",
@@ -86,14 +95,48 @@ describe("Single-command orchestration, split-screen demo, and walkthrough recor
     expect(bundle.base).toBe("/roomsmith/");
     expect(existsSync(bundle.indexHtmlPath)).toBe(true);
     expect(existsSync(bundle.stylesCssPath)).toBe(true);
+    expect(existsSync(bundle.demoVideoPath)).toBe(true);
+    expect(statSync(bundle.demoVideoPath).size).toBeGreaterThan(100_000);
     const html = readFileSync(bundle.indexHtmlPath, "utf8");
     expect(html).toContain('href="/roomsmith/src/styles.css"');
+    expect(html).toContain('src="/roomsmith/media/roomsmith-demo.webm"');
+    expect(html).toContain(SPLIT_SCREEN_MODE_TOGGLE_TEXT);
     expect(html).toContain("split-screen-demo");
   });
 
-  it("runs unified split-screen web demo over in-memory WebRTC mock transport across all 3 puzzles", async () => {
+  it("switches between video walkthrough mode and split-screen simulator mode and runs across all 3 puzzles", async () => {
     const transport = new InMemoryWebRtcMockTransport();
     const demo = new SplitScreenEscapeRoomDemo(undefined, transport);
+
+    expect(demo.getMode()).toBe("simulator");
+    expect(demo.getState().mode_toggle_text).toBe(
+      "Mode: [🎥 Watch Full Escape Walkthrough] [🧩 Play Split-Screen Simulator]",
+    );
+    expect(demo.getState().walkthrough_video.active).toBe(false);
+    expect(demo.getState().walkthrough_video.src).toBe(
+      WALKTHROUGH_VIDEO_ASSET_PATH,
+    );
+    expect(demo.getState().walkthrough_video.size_kb).toBe(
+      WALKTHROUGH_VIDEO_SIZE_KB,
+    );
+
+    // Switch to video walkthrough mode
+    const videoModeState = demo.setMode("video");
+    expect(videoModeState.mode).toBe("video");
+    expect(videoModeState.walkthrough_video.active).toBe(true);
+    const videoHtml = demo.renderQuickSwitchViewHtml("/roomsmith/");
+    expect(videoHtml).toContain(
+      "Mode: [🎥 Watch Full Escape Walkthrough] [🧩 Play Split-Screen Simulator]",
+    );
+    expect(videoHtml).toContain('src="/roomsmith/media/roomsmith-demo.webm"');
+    expect(videoHtml).toContain(
+      "126 KB roomsmith-demo.webm showcasing the synchronized Fire TV screen and companion camera perspective alignment",
+    );
+
+    // Toggle back to interactive simulator mode
+    const simModeState = demo.toggleMode();
+    expect(simModeState.mode).toBe("simulator");
+    expect(simModeState.walkthrough_video.active).toBe(false);
 
     expect(demo.getState().companion.perspective_preset).toBe(
       "skewed_uncalibrated",

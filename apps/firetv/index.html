@@ -325,6 +325,23 @@
   </header>
 
   <main class="sim-main" id="main">
+    <section class="demo-mode-bar" id="demo-mode-bar" data-testid="demo-mode-bar" aria-label="Split-Screen Demo Mode Switcher">
+      <strong class="demo-mode-bar__label" id="demo-mode-bar-label">Mode: [🎥 Watch Full Escape Walkthrough] [🧩 Play Split-Screen Simulator]</strong>
+      <div class="demo-mode-bar__buttons" role="group" aria-label="Mode switcher">
+        <button type="button" class="tv-button" id="btn-mode-video" data-demo-mode="video" aria-pressed="false">[🎥 Watch Full Escape Walkthrough]</button>
+        <button type="button" class="tv-button tv-button--primary" id="btn-mode-simulator" data-demo-mode="simulator" aria-pressed="true">[🧩 Play Split-Screen Simulator]</button>
+      </div>
+    </section>
+
+    <section class="walkthrough-video-panel is-hidden" id="walkthrough-video-panel" data-testid="walkthrough-video-panel" aria-labelledby="walkthrough-video-heading">
+      <span class="eyebrow">SYNCHRONIZED WALKTHROUGH RECORDING · 126 KB WEBM</span>
+      <h3 id="walkthrough-video-heading" style="margin:4px 0 8px;font-family:var(--font-display)">Full Escape Walkthrough — Companion Camera &amp; Fire TV Split-Screen</h3>
+      <p style="margin:0;color:var(--muted)">
+        126 KB <code>roomsmith-demo.webm</code> showcasing the synchronized Fire TV screen and companion camera perspective alignment (skewed PlayMat → inaction Level 1 subtle nudge → Level 2 directional hint → aligned perspective unlocks puzzle).
+      </p>
+      <video id="walkthrough-video-player" controls loop muted playsinline preload="metadata" src="/media/roomsmith-demo.webm" data-video-size-kb="126"></video>
+    </section>
+
     <div class="split-screen-shell" id="split-screen-demo">
       <!-- LEFT PANE: COMPANION CAMERA PERSPECTIVE & IN-MEMORY WEBRTC TRANSPORT -->
       <aside class="split-screen-pane split-screen-pane--companion" id="companion-pane" aria-labelledby="companion-pane-heading">
@@ -1148,6 +1165,47 @@
         const countEl = document.getElementById("webrtc-packet-count");
         if (countEl) countEl.textContent = String(webrtcPackets);
       }
+
+      function setDemoViewMode(mode) {
+        const videoPanel = document.getElementById("walkthrough-video-panel");
+        const splitDemo = document.getElementById("split-screen-demo");
+        const btnVideo = document.getElementById("btn-mode-video");
+        const btnSim = document.getElementById("btn-mode-simulator");
+        const videoPlayer = document.getElementById("walkthrough-video-player");
+
+        if (mode === "video") {
+          if (videoPanel) videoPanel.classList.remove("is-hidden");
+          if (splitDemo) splitDemo.classList.add("is-hidden");
+          if (btnVideo) {
+            btnVideo.classList.add("tv-button--primary");
+            btnVideo.setAttribute("aria-pressed", "true");
+          }
+          if (btnSim) {
+            btnSim.classList.remove("tv-button--primary");
+            btnSim.setAttribute("aria-pressed", "false");
+          }
+          if (videoPlayer && typeof videoPlayer.play === "function") {
+            videoPlayer.play().catch(() => {});
+          }
+        } else {
+          if (videoPanel) videoPanel.classList.add("is-hidden");
+          if (splitDemo) splitDemo.classList.remove("is-hidden");
+          if (btnVideo) {
+            btnVideo.classList.remove("tv-button--primary");
+            btnVideo.setAttribute("aria-pressed", "false");
+          }
+          if (btnSim) {
+            btnSim.classList.add("tv-button--primary");
+            btnSim.setAttribute("aria-pressed", "true");
+          }
+          if (videoPlayer && typeof videoPlayer.pause === "function") {
+            videoPlayer.pause();
+          }
+        }
+      }
+
+      document.getElementById("btn-mode-video").addEventListener("click", () => setDemoViewMode("video"));
+      document.getElementById("btn-mode-simulator").addEventListener("click", () => setDemoViewMode("simulator"));
 
       document.getElementById("btn-perspective-skew").addEventListener("click", () => {
         state.calibrated = false;
