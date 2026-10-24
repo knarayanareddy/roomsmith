@@ -194,40 +194,77 @@ async function tryRecordWithPlaywright(outputPath: string): Promise<boolean> {
       });
       const page = await context.newPage();
       await page.goto(`http://127.0.0.1:${port}/`);
+      await page.waitForTimeout(7500);
+
       await page.click('[data-screen-tab="puzzle"]');
       await page.click("#btn-perspective-skew");
-      await page.waitForTimeout(1200);
+      await page.waitForTimeout(7500);
 
       // Simulate inaction -> Level 1 nudge clue banner
       await page.click("#btn-simulate-inaction");
-      await page.waitForTimeout(1400);
+      await page.waitForTimeout(8000);
 
       // Simulate continued inaction -> Level 2 directional hint
       await page.click("#btn-simulate-inaction");
-      await page.waitForTimeout(1400);
+      await page.waitForTimeout(8000);
 
       // Align living room perspective -> puzzle unlocks
       await page.click("#btn-align-and-unlock");
-      await page.waitForTimeout(1600);
+      await page.waitForTimeout(8000);
 
       const video = page.video();
       await context.close();
       await browser.close();
 
-      if (video) {
-        const recordedPath = await video.path();
-        if (existsSync(recordedPath)) {
-          mkdirSync(dirname(outputPath), { recursive: true });
-          copyFileSync(recordedPath, outputPath);
-          return true;
-        }
-      }
-      const files = readdirSync(tempVideoDir).filter((f) =>
-        f.endsWith(".webm"),
-      );
-      if (files[0]) {
+      const rawRecordedPath = video ? await video.path() : null;
+      const candidatePath =
+        rawRecordedPath && existsSync(rawRecordedPath)
+          ? rawRecordedPath
+          : readdirSync(tempVideoDir)
+              .filter((f) => f.endsWith(".webm"))
+              .map((f) => resolve(tempVideoDir, f))[0];
+
+      if (candidatePath && existsSync(candidatePath)) {
         mkdirSync(dirname(outputPath), { recursive: true });
-        copyFileSync(resolve(tempVideoDir, files[0]), outputPath);
+        const narrationPath = resolve(
+          REPO_ROOT,
+          "docs/media/roomsmith-narration.mp3",
+        );
+        if (existsSync(narrationPath)) {
+          const muxResult = spawnSync("ffmpeg", [
+            "-y",
+            "-i",
+            candidatePath,
+            "-i",
+            narrationPath,
+            "-c:v",
+            "copy",
+            "-c:a",
+            "libopus",
+            "-b:a",
+            "128k",
+            "-shortest",
+            outputPath,
+          ]);
+          if (muxResult.status === 0 && existsSync(outputPath)) {
+            spawnSync("ffmpeg", [
+              "-y",
+              "-i",
+              outputPath,
+              "-c:v",
+              "libx264",
+              "-pix_fmt",
+              "yuv420p",
+              "-c:a",
+              "aac",
+              "-b:a",
+              "128k",
+              outputPath.replace(/\.webm$/, ".mp4"),
+            ]);
+            return true;
+          }
+        }
+        copyFileSync(candidatePath, outputPath);
         return true;
       }
     } finally {
