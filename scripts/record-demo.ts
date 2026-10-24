@@ -184,7 +184,12 @@ async function tryRecordWithPlaywright(outputPath: string): Promise<boolean> {
     mkdirSync(tempVideoDir, { recursive: true });
 
     try {
-      const browser = await pw.chromium.launch({ headless: true });
+      const browser = await pw.chromium.launch({
+        headless: true,
+        ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH
+          ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH }
+          : {}),
+      });
       const context = await browser.newContext({
         viewport: { width: 1280, height: 720 },
         recordVideo: {
@@ -194,23 +199,26 @@ async function tryRecordWithPlaywright(outputPath: string): Promise<boolean> {
       });
       const page = await context.newPage();
       await page.goto(`http://127.0.0.1:${port}/`);
+      // 0s to 29.5s: Overview & connection status during Introduction
+      await page.waitForTimeout(29500);
+
+      // 29.5s to 65.5s: Split-screen view and skewed companion perspective
+      await page.click('[data-screen-tab="puzzle"]');
+      await page.waitForTimeout(16000);
+      await page.click("#btn-perspective-skew");
       await page.waitForTimeout(20000);
 
-      await page.click('[data-screen-tab="puzzle"]');
-      await page.click("#btn-perspective-skew");
-      await page.waitForTimeout(22000);
-
-      // Simulate inaction -> Level 1 nudge clue banner
+      // 65.5s to 88.0s: Inaction detection & progressive hint escalation
+      await page.waitForTimeout(6500);
       await page.click("#btn-simulate-inaction");
-      await page.waitForTimeout(24000);
-
-      // Simulate continued inaction -> Level 2 directional hint
+      await page.waitForTimeout(8000);
       await page.click("#btn-simulate-inaction");
-      await page.waitForTimeout(24000);
+      await page.waitForTimeout(8000);
 
-      // Align living room perspective -> puzzle unlocks
+      // 88.0s to 116.0s: Perspective alignment, on-device transform validation, and puzzle unlock
+      await page.waitForTimeout(4000);
       await page.click("#btn-align-and-unlock");
-      await page.waitForTimeout(23000);
+      await page.waitForTimeout(24000);
 
       const video = page.video();
       await context.close();
@@ -243,7 +251,6 @@ async function tryRecordWithPlaywright(outputPath: string): Promise<boolean> {
             "libopus",
             "-b:a",
             "128k",
-            "-shortest",
             outputPath,
           ]);
           if (muxResult.status === 0 && existsSync(outputPath)) {
