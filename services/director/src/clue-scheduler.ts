@@ -10,10 +10,39 @@ import type { DirectorErrorCode } from "./fixture-director-service.js";
  */
 export const DEFAULT_STALL_THRESHOLD_MS = 3 * 60 * 1000;
 
+export type ClueProgressionTier =
+  | "subtle_nudge"
+  | "directional_clue"
+  | "direct_solution_guide";
+
+export function resolveClueTier(hintLevel: number): {
+  tier: ClueProgressionTier;
+  tier_label: string;
+} {
+  if (hintLevel <= 1) {
+    return {
+      tier: "subtle_nudge",
+      tier_label: "Level 1 · Subtle Nudge",
+    };
+  }
+  if (hintLevel === 2) {
+    return {
+      tier: "directional_clue",
+      tier_label: "Level 2 · Directional Clue",
+    };
+  }
+  return {
+    tier: "direct_solution_guide",
+    tier_label: "Level 3 · Direct Solution Guide",
+  };
+}
+
 export interface ScheduledClueOffer {
   session_id: string;
   puzzle_id: string;
   hint_level: number;
+  tier: ClueProgressionTier;
+  tier_label: string;
   stalled_ms: number;
   triggered_at_ms: number;
   trigger_reason: "stall_timeout" | "manual_request";
@@ -84,6 +113,7 @@ export class AdaptiveClueScheduler {
   private readonly onClueOffered:
     | ((offer: ScheduledClueOffer) => void)
     | undefined;
+  private readonly subscribers = new Set<(offer: ScheduledClueOffer) => void>();
   private readonly trackers = new Map<string, PuzzleStallTrackerState>();
   private pollIntervalHandle: ReturnType<typeof setInterval> | null = null;
 
@@ -98,6 +128,26 @@ export class AdaptiveClueScheduler {
       throw new Error("invalid_stall_threshold_ms");
     }
     this.onClueOffered = options.onClueOffered;
+    if (this.onClueOffered) {
+      this.subscribers.add(this.onClueOffered);
+    }
+  }
+
+  /**
+   * Subscribes to progressive clue offers emitted by the scheduler.
+   * Returns an unsubscribe function.
+   */
+  subscribe(listener: (offer: ScheduledClueOffer) => void): () => void {
+    this.subscribers.add(listener);
+    return () => {
+      this.subscribers.delete(listener);
+    };
+  }
+
+  private emitOffer(offer: ScheduledClueOffer): void {
+    for (const listener of this.subscribers) {
+      listener(structuredClone(offer));
+    }
   }
 
   startPuzzleTimer(input: StartPuzzleTimerInput): PuzzleStallTrackerState {
@@ -107,7 +157,7 @@ export class AdaptiveClueScheduler {
     if (!Number.isSafeInteger(input.now_ms) || input.now_ms < 0) {
       throw new Error("invalid_timer_timestamp");
     }
-    const maxHintLevel = input.max_hint_level ?? 2;
+    const maxHintLevel = input.max_hint_level ?? 3;
     if (!Number.isSafeInteger(maxHintLevel) || maxHintLevel < 1) {
       throw new Error("invalid_max_hint_level");
     }
@@ -301,17 +351,20 @@ export class AdaptiveClueScheduler {
     tracker.accumulated_stall_ms = 0;
     tracker.last_activity_at_ms = input.now_ms;
 
+    const tierInfo = resolveClueTier(nextHintLevel);
     const offer: ScheduledClueOffer = {
       session_id: tracker.session_id,
       puzzle_id: tracker.puzzle_id,
       hint_level: nextHintLevel,
+      tier: tierInfo.tier,
+      tier_label: tierInfo.tier_label,
       stalled_ms: stalledMs,
       triggered_at_ms: input.now_ms,
       trigger_reason: "stall_timeout",
       director_result: directorResult,
     };
     tracker.offered_clues.push(offer);
-    this.onClueOffered?.(structuredClone(offer));
+    this.emitOffer(offer);
 
     return {
       triggered: true,
@@ -375,17 +428,20 @@ export class AdaptiveClueScheduler {
     tracker.accumulated_stall_ms = 0;
     tracker.last_activity_at_ms = input.now_ms;
 
+    const tierInfo = resolveClueTier(nextHintLevel);
     const offer: ScheduledClueOffer = {
       session_id: tracker.session_id,
       puzzle_id: tracker.puzzle_id,
       hint_level: nextHintLevel,
+      tier: tierInfo.tier,
+      tier_label: tierInfo.tier_label,
       stalled_ms: stalledMs,
       triggered_at_ms: input.now_ms,
       trigger_reason: "manual_request",
       director_result: directorResult,
     };
     tracker.offered_clues.push(offer);
-    this.onClueOffered?.(structuredClone(offer));
+    this.emitOffer(offer);
 
     return {
       triggered: true,
@@ -437,4 +493,7 @@ export class AdaptiveClueScheduler {
   }
 }
 
-export { AdaptiveClueScheduler as ClueTimerOrchestrator };
+export {
+  AdaptiveClueScheduler as ClueTimerOrchestrator,
+  AdaptiveClueScheduler as ClueScheduler,
+};

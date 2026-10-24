@@ -74,14 +74,17 @@ export const DEFAULT_AUTHORED_HINT_MAP: Readonly<
   lighthouse_alignment: [
     "Check the lens label, then compare its position with the book.",
     "Place the red lens cup on the left side of the archive book or pick the left-hand remote option.",
+    "Direct guide: set the red lens cup to the left of the book for one second, or select option_red_left.",
   ],
   raise_the_shield: [
     "Use an open palm held steady in frame or hold the remote gearbox control.",
     "Hold the gearbox shield button for 750 ms, or enable no-timing mode for a single press.",
+    "Direct guide: raise an open palm for 750 ms in camera view, or hold option_shield on the remote.",
   ],
   lens_archive_sequence: [
     "Start with the circle lens zone before placing the archive book in the square zone.",
     "Place the blue lens in zone_lens first, then place the book in zone_archive to complete the PowerGrid circuit.",
+    "Direct guide: hold blue_cup in zone_lens for 500 ms, then hold book in zone_archive for 500 ms.",
   ],
 };
 

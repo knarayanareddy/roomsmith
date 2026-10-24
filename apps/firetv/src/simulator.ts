@@ -13,9 +13,12 @@ import type {
 import {
   AdaptiveClueScheduler,
   BoundedDirectorService,
+  resolveClueTier,
   type BoundedDirectorHintResult,
   type ClueEvaluationResult,
+  type ClueProgressionTier,
   type DirectorErrorCode,
+  type ScheduledClueOffer,
 } from "../../../services/director/src/index.js";
 import {
   PlayerSessionConfigurationService,
@@ -83,6 +86,51 @@ export interface SimulatorCaseReport {
   room_media_included: false;
 }
 
+export type RemoteDpadKey =
+  | "DPAD_UP"
+  | "DPAD_DOWN"
+  | "DPAD_LEFT"
+  | "DPAD_RIGHT"
+  | "DPAD_CENTER"
+  | "SELECT"
+  | "BACK"
+  | "HINT"
+  | "DISMISS"
+  | "YELLOW"
+  | "ArrowUp"
+  | "ArrowDown"
+  | "ArrowLeft"
+  | "ArrowRight"
+  | "Enter"
+  | " "
+  | "Escape"
+  | "Backspace"
+  | "KeyH";
+
+export interface ClueBannerState {
+  visible: boolean;
+  banner_id: string;
+  puzzle_id: CanonicalPuzzleId;
+  hint_level: 1 | 2 | 3;
+  tier: ClueProgressionTier;
+  tier_label: string;
+  text: string;
+  target_role: "observer" | "navigator" | "either";
+  trigger_reason: "stall_timeout" | "manual_request";
+  stalled_ms: number;
+  triggered_at_ms: number;
+  animation_class:
+    | "clue-banner--level-1"
+    | "clue-banner--level-2"
+    | "clue-banner--level-3";
+  focused_action: "request_next" | "dismiss";
+  dpad_controls: {
+    dismiss_keys: readonly string[];
+    request_keys: readonly string[];
+    navigate_keys: readonly string[];
+  };
+}
+
 export interface SimulatorStateSnapshot {
   session_id: string;
   episode_id: string;
@@ -105,6 +153,8 @@ export interface SimulatorStateSnapshot {
   hints_used: Record<CanonicalPuzzleId, number>;
   last_hint_text: string | null;
   last_guidance: string | null;
+  clue_banner: ClueBannerState | null;
+  clue_banner_history: ClueBannerState[];
   sequence_step: number;
   sequence_started_at_ms: number | null;
   hold_progress_ms: number;
@@ -145,6 +195,7 @@ export const SIMULATOR_PUZZLES: ReadonlyArray<SimulatorPuzzleDefinition> = [
     authored_hints: [
       "Check the lens label, then compare its position with the book.",
       "Place the red lens cup on the left side of the archive book or pick the left-hand remote option.",
+      "Direct guide: set the red lens cup to the left of the book for one second, or select option_red_left.",
     ],
   },
   {
@@ -171,6 +222,7 @@ export const SIMULATOR_PUZZLES: ReadonlyArray<SimulatorPuzzleDefinition> = [
     authored_hints: [
       "Use an open palm held steady in frame or hold the remote gearbox control.",
       "Hold the gearbox shield button for 750 ms, or enable no-timing mode for a single press.",
+      "Direct guide: raise an open palm for 750 ms in camera view, or hold option_shield on the remote.",
     ],
   },
   {
@@ -202,6 +254,7 @@ export const SIMULATOR_PUZZLES: ReadonlyArray<SimulatorPuzzleDefinition> = [
     authored_hints: [
       "Start with the circle lens zone before placing the archive book in the square zone.",
       "Place the blue lens in zone_lens first, then place the book in zone_archive to complete the PowerGrid circuit.",
+      "Direct guide: hold blue_cup in zone_lens for 500 ms, then hold book in zone_archive for 500 ms.",
     ],
   },
 ];
@@ -300,6 +353,9 @@ export class FireTvWebSimulator {
   };
   private lastHintText: string | null = null;
   private lastGuidance: string | null = null;
+  private activeClueBanner: ClueBannerState | null = null;
+  private clueBannerHistory: ClueBannerState[] = [];
+  private bannerCounter = 0;
   private sequenceStep = 0;
   private sequenceStartedAtMs: number | null = null;
   private holdStartedAtMs: number | null = null;
@@ -313,11 +369,54 @@ export class FireTvWebSimulator {
   constructor(
     director?: BoundedDirectorService,
     snapshotStore?: PuzzleSessionSnapshotStore,
+    clueScheduler?: AdaptiveClueScheduler,
   ) {
     this.director = director ?? new BoundedDirectorService(AUTHORED_HINT_MAP);
-    this.clueScheduler = new AdaptiveClueScheduler({ director: this.director });
+    this.clueScheduler =
+      clueScheduler ?? new AdaptiveClueScheduler({ director: this.director });
     this.snapshotStore = snapshotStore ?? null;
+    this.clueScheduler.subscribe((offer) => {
+      this.handleScheduledClueOffer(offer);
+    });
     this.syncSchedulerForCurrentPuzzle(0);
+  }
+
+  getClueScheduler(): AdaptiveClueScheduler {
+    return this.clueScheduler;
+  }
+
+  private handleScheduledClueOffer(offer: ScheduledClueOffer): void {
+    const puzzleId = offer.puzzle_id as CanonicalPuzzleId;
+    const clampedLevel = Math.max(1, Math.min(3, offer.hint_level)) as
+      | 1
+      | 2
+      | 3;
+    const tierInfo = resolveClueTier(clampedLevel);
+    this.bannerCounter += 1;
+    const banner: ClueBannerState = {
+      visible: true,
+      banner_id: `clue-banner-${this.bannerCounter}`,
+      puzzle_id: puzzleId,
+      hint_level: clampedLevel,
+      tier: offer.tier ?? tierInfo.tier,
+      tier_label: offer.tier_label ?? tierInfo.tier_label,
+      text: offer.director_result.hint.text,
+      target_role: offer.director_result.hint.target_role,
+      trigger_reason: offer.trigger_reason,
+      stalled_ms: offer.stalled_ms,
+      triggered_at_ms: offer.triggered_at_ms,
+      animation_class: `clue-banner--level-${clampedLevel}`,
+      focused_action: clampedLevel < 3 ? "request_next" : "dismiss",
+      dpad_controls: {
+        dismiss_keys: ["DPAD_DOWN", "BACK", "Escape"],
+        request_keys: ["DPAD_UP", "HINT", "KeyH", "YELLOW"],
+        navigate_keys: ["DPAD_LEFT", "DPAD_RIGHT", "DPAD_CENTER"],
+      },
+    };
+    this.hintsUsed[puzzleId] = clampedLevel;
+    this.lastHintText = offer.director_result.hint.text;
+    this.activeClueBanner = banner;
+    this.clueBannerHistory.push(structuredClone(banner));
   }
 
   private syncSchedulerForCurrentPuzzle(nowMs: number): void {
@@ -445,6 +544,7 @@ export class FireTvWebSimulator {
       completed_at_ms: atMs,
     });
     this.clueScheduler.markPuzzleCompleted(puzzle.puzzle_id, atMs);
+    this.activeClueBanner = null;
     this.holdStartedAtMs = null;
     this.holdProgressMs = 0;
     this.sequenceStep = 0;
@@ -753,7 +853,10 @@ export class FireTvWebSimulator {
     return this.getState();
   }
 
-  async requestDirectorHint(lastError: DirectorErrorCode = "none"): Promise<{
+  async requestDirectorHint(
+    lastError: DirectorErrorCode = "none",
+    nowMs = this.elapsedActiveTimeMs,
+  ): Promise<{
     hint_result: BoundedDirectorHintResult;
     state: SimulatorStateSnapshot;
   }> {
@@ -761,25 +864,17 @@ export class FireTvWebSimulator {
     if (!current) {
       throw new Error("no_active_puzzle_for_hint");
     }
-    const priorLevel = this.hintsUsed[current.puzzle_id];
-    const nextLevel = Math.min(priorLevel + 1, current.authored_hints.length);
-    const hintResult = await this.director.requestHint({
-      episode_version: this.contentVersion,
+    this.elapsedActiveTimeMs = Math.max(this.elapsedActiveTimeMs, nowMs);
+    const evaluation = await this.clueScheduler.requestManualHint({
       puzzle_id: current.puzzle_id,
-      attempt_count: this.attemptCounts[current.puzzle_id],
-      hint_level: nextLevel,
+      now_ms: this.elapsedActiveTimeMs,
       last_error: lastError,
-      transport: this.companionConnected ? "webrtc" : "cloud_relay",
-      accessibility_mode: this.accessibility.no_timing_mode
-        ? "no_timing"
-        : this.accessibility.reduced_motion
-          ? "reduced_motion"
-          : "standard",
     });
-    this.hintsUsed[current.puzzle_id] = nextLevel;
-    this.lastHintText = hintResult.hint.text;
+    if (!evaluation.offer) {
+      throw new Error("director_hint_unavailable");
+    }
     return {
-      hint_result: hintResult,
+      hint_result: evaluation.offer.director_result,
       state: this.getState(),
     };
   }
@@ -797,14 +892,146 @@ export class FireTvWebSimulator {
       puzzle_id: current.puzzle_id,
       now_ms: nowMs,
     });
-    if (evaluation.triggered && evaluation.offer) {
-      this.hintsUsed[current.puzzle_id] = evaluation.current_hint_level;
-      this.lastHintText = evaluation.offer.director_result.hint.text;
-    }
     return {
       evaluation,
       state: this.getState(),
     };
+  }
+
+  /**
+   * Dismisses the currently visible on-screen clue banner overlay.
+   */
+  dismissClueBanner(): SimulatorStateSnapshot {
+    if (this.activeClueBanner) {
+      this.activeClueBanner = {
+        ...this.activeClueBanner,
+        visible: false,
+      };
+      this.lastGuidance = "Clue banner dismissed via remote control.";
+    }
+    return this.getState();
+  }
+
+  /**
+   * Handles Fire TV remote D-pad and action keys to navigate, dismiss, or
+   * request progressive clue banners on demand.
+   */
+  async handleRemoteDpad(
+    key: RemoteDpadKey,
+    nowMs = this.elapsedActiveTimeMs,
+  ): Promise<SimulatorStateSnapshot> {
+    this.elapsedActiveTimeMs = Math.max(this.elapsedActiveTimeMs, nowMs);
+
+    if (key === "DPAD_LEFT" || key === "ArrowLeft") {
+      if (this.activeClueBanner && this.activeClueBanner.visible) {
+        this.activeClueBanner = {
+          ...this.activeClueBanner,
+          focused_action: "request_next",
+        };
+      }
+      return this.getState();
+    }
+
+    if (key === "DPAD_RIGHT" || key === "ArrowRight") {
+      if (this.activeClueBanner && this.activeClueBanner.visible) {
+        this.activeClueBanner = {
+          ...this.activeClueBanner,
+          focused_action: "dismiss",
+        };
+      }
+      return this.getState();
+    }
+
+    if (
+      key === "DPAD_DOWN" ||
+      key === "ArrowDown" ||
+      key === "BACK" ||
+      key === "Escape" ||
+      key === "Backspace" ||
+      key === "DISMISS"
+    ) {
+      return this.dismissClueBanner();
+    }
+
+    if (
+      key === "DPAD_UP" ||
+      key === "ArrowUp" ||
+      key === "HINT" ||
+      key === "KeyH" ||
+      key === "YELLOW"
+    ) {
+      const res = await this.requestDirectorHint("none", nowMs);
+      return res.state;
+    }
+
+    if (
+      key === "DPAD_CENTER" ||
+      key === "SELECT" ||
+      key === "Enter" ||
+      key === " "
+    ) {
+      if (
+        this.activeClueBanner &&
+        this.activeClueBanner.visible &&
+        this.activeClueBanner.focused_action === "dismiss"
+      ) {
+        return this.dismissClueBanner();
+      }
+      const res = await this.requestDirectorHint("none", nowMs);
+      return res.state;
+    }
+
+    return this.getState();
+  }
+
+  /**
+   * Renders the animated HTML overlay for the progressive 3-level clue banner
+   * (1: Subtle Nudge -> 2: Directional Clue -> 3: Direct Solution Guide).
+   */
+  renderClueBannerHtml(
+    banner: ClueBannerState | null = this.activeClueBanner,
+  ): string {
+    if (!banner || !banner.visible) {
+      return `<aside class="clue-banner-overlay is-hidden" data-testid="clue-banner-overlay" aria-hidden="true"></aside>`;
+    }
+
+    const steps = [
+      { level: 1, label: "1. Subtle Nudge" },
+      { level: 2, label: "2. Directional Clue" },
+      { level: 3, label: "3. Direct Solution Guide" },
+    ];
+    const stepsHtml = steps
+      .map(
+        (step) =>
+          `<li class="clue-banner__step${banner.hint_level === step.level ? " clue-banner__step--active" : ""}" data-step-level="${step.level}">${step.label}</li>`,
+      )
+      .join("");
+
+    const requestFocused =
+      banner.focused_action === "request_next"
+        ? " clue-banner__btn--focused"
+        : "";
+    const dismissFocused =
+      banner.focused_action === "dismiss" ? " clue-banner__btn--focused" : "";
+
+    return [
+      `<aside class="clue-banner-overlay is-visible" data-testid="clue-banner-overlay" data-hint-level="${banner.hint_level}" data-tier="${banner.tier}" role="status" aria-live="polite">`,
+      `  <div class="clue-banner ${banner.animation_class}">`,
+      `    <div class="clue-banner__header">`,
+      `      <span class="clue-banner__badge">${banner.tier_label}</span>`,
+      `      <ol class="clue-banner__steps" aria-label="Progressive clue ladder">${stepsHtml}</ol>`,
+      `    </div>`,
+      `    <p class="clue-banner__text">${banner.text}</p>`,
+      `    <div class="clue-banner__footer">`,
+      `      <div class="clue-banner__controls">`,
+      `        <button type="button" class="clue-banner__btn${requestFocused}" data-dpad-action="request_next">[D-Pad Up / H] Next Progressive Clue</button>`,
+      `        <button type="button" class="clue-banner__btn${dismissFocused}" data-dpad-action="dismiss">[D-Pad Down / Back] Dismiss Banner</button>`,
+      `      </div>`,
+      `      <span class="clue-banner__dpad-hint">Role: ${banner.target_role} · D-Pad Left/Right to switch action, Select to confirm</span>`,
+      `    </div>`,
+      `  </div>`,
+      `</aside>`,
+    ].join("\n");
   }
 
   exportPersistedSnapshot(
@@ -958,6 +1185,8 @@ export class FireTvWebSimulator {
     };
     this.lastHintText = null;
     this.lastGuidance = "Episode reset to lobby.";
+    this.activeClueBanner = null;
+    this.clueBannerHistory = [];
     this.sequenceStep = 0;
     this.sequenceStartedAtMs = null;
     this.holdStartedAtMs = null;
@@ -1009,6 +1238,10 @@ export class FireTvWebSimulator {
       hints_used: structuredClone(this.hintsUsed),
       last_hint_text: this.lastHintText,
       last_guidance: this.lastGuidance,
+      clue_banner: this.activeClueBanner
+        ? structuredClone(this.activeClueBanner)
+        : null,
+      clue_banner_history: structuredClone(this.clueBannerHistory),
       sequence_step: this.sequenceStep,
       sequence_started_at_ms: this.sequenceStartedAtMs,
       hold_progress_ms: this.holdProgressMs,
