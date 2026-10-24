@@ -57,6 +57,14 @@ export const viteConfig: RoomSmithViteConfig = defineRoomSmithViteConfig({
         src: "../../docs/media/roomsmith-demo.webm",
         dest: "media/roomsmith-demo.webm",
       },
+      {
+        src: "../../docs/media/roomsmith-demo.mp4",
+        dest: "media/roomsmith-demo.mp4",
+      },
+      {
+        src: "../../docs/media/roomsmith-narration.mp3",
+        dest: "media/roomsmith-narration.mp3",
+      },
     ],
   },
 });

@@ -194,23 +194,23 @@ async function tryRecordWithPlaywright(outputPath: string): Promise<boolean> {
       });
       const page = await context.newPage();
       await page.goto(`http://127.0.0.1:${port}/`);
-      await page.waitForTimeout(7500);
+      await page.waitForTimeout(20000);
 
       await page.click('[data-screen-tab="puzzle"]');
       await page.click("#btn-perspective-skew");
-      await page.waitForTimeout(7500);
+      await page.waitForTimeout(22000);
 
       // Simulate inaction -> Level 1 nudge clue banner
       await page.click("#btn-simulate-inaction");
-      await page.waitForTimeout(8000);
+      await page.waitForTimeout(24000);
 
       // Simulate continued inaction -> Level 2 directional hint
       await page.click("#btn-simulate-inaction");
-      await page.waitForTimeout(8000);
+      await page.waitForTimeout(24000);
 
       // Align living room perspective -> puzzle unlocks
       await page.click("#btn-align-and-unlock");
-      await page.waitForTimeout(8000);
+      await page.waitForTimeout(23000);
 
       const video = page.video();
       await context.close();

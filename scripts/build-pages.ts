@@ -62,6 +62,7 @@ export function buildGitHubPagesBundle(
       `href="${viteConfig.base}specs/ui/wireframes.css"`,
     )
     .replace('href="/ui/theme.css"', `href="${viteConfig.base}ui/theme.css"`)
+    .replaceAll('src="/media/', `src="${viteConfig.base}media/`)
     .replaceAll(
       'src="/media/roomsmith-demo.webm"',
       `src="${viteConfig.base}media/roomsmith-demo.webm"`,
