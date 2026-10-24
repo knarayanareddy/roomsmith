@@ -6,7 +6,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { viteConfig } from "../apps/firetv/vite.config.js";
@@ -29,11 +29,13 @@ export interface BuildPagesResult {
   outDir: string;
   indexHtmlPath: string;
   stylesCssPath: string;
+  demoVideoPath: string;
 }
 
 /**
  * Builds the standalone GitHub Pages split-screen RoomSmith web demo
- * honoring `apps/firetv/vite.config.ts` (`base: '/roomsmith/'`).
+ * honoring `apps/firetv/vite.config.ts` (`base: '/roomsmith/'`) and copying
+ * `docs/media/roomsmith-demo.webm` to `/media/roomsmith-demo.webm`.
  */
 export function buildGitHubPagesBundle(
   outDir = resolve(REPO_ROOT, "dist/pages"),
@@ -44,6 +46,7 @@ export function buildGitHubPagesBundle(
   mkdirSync(resolve(outDir, "src"), { recursive: true });
   mkdirSync(resolve(outDir, "specs/ui"), { recursive: true });
   mkdirSync(resolve(outDir, "ui"), { recursive: true });
+  mkdirSync(resolve(outDir, "media"), { recursive: true });
 
   const rawHtml = readFileSync(
     resolve(REPO_ROOT, "apps/firetv/index.html"),
@@ -58,10 +61,16 @@ export function buildGitHubPagesBundle(
       'href="/specs/ui/wireframes.css"',
       `href="${viteConfig.base}specs/ui/wireframes.css"`,
     )
-    .replace('href="/ui/theme.css"', `href="${viteConfig.base}ui/theme.css"`);
+    .replace('href="/ui/theme.css"', `href="${viteConfig.base}ui/theme.css"`)
+    .replaceAll(
+      'src="/media/roomsmith-demo.webm"',
+      `src="${viteConfig.base}media/roomsmith-demo.webm"`,
+    );
 
   const indexHtmlPath = resolve(outDir, "index.html");
   const stylesCssPath = resolve(outDir, "src/styles.css");
+  const demoVideoPath = resolve(outDir, "media/roomsmith-demo.webm");
+
   writeFileSync(indexHtmlPath, rewrittenHtml, "utf8");
   writeFileSync(resolve(outDir, "404.html"), rewrittenHtml, "utf8");
   writeFileSync(resolve(outDir, ".nojekyll"), "", "utf8");
@@ -72,11 +81,20 @@ export function buildGitHubPagesBundle(
   );
   cpSync(resolve(REPO_ROOT, "ui/theme.css"), resolve(outDir, "ui/theme.css"));
 
+  const firetvRoot = resolve(REPO_ROOT, "apps/firetv", viteConfig.root);
+  for (const asset of viteConfig.build.copyAssets) {
+    const srcPath = resolve(firetvRoot, asset.src);
+    const destPath = resolve(outDir, asset.dest);
+    mkdirSync(dirname(destPath), { recursive: true });
+    cpSync(srcPath, destPath);
+  }
+
   return {
     base: viteConfig.base,
     outDir,
     indexHtmlPath,
     stylesCssPath,
+    demoVideoPath,
   };
 }
 
@@ -87,6 +105,6 @@ const isMainModule =
 if (isMainModule) {
   const result = buildGitHubPagesBundle();
   process.stdout.write(
-    `RoomSmith GitHub Pages bundle written to ${result.outDir} (base: ${result.base})\n`,
+    `RoomSmith GitHub Pages bundle written to ${result.outDir} (base: ${result.base}, video: ${result.demoVideoPath})\n`,
   );
 }

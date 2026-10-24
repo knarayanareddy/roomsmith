@@ -70,6 +70,19 @@ export function createFireTvServer(
     }
 
     if (
+      pathname === "/media/roomsmith-demo.webm" ||
+      pathname === "/docs/media/roomsmith-demo.webm"
+    ) {
+      const video = readFileSync(resolvePath("docs/media/roomsmith-demo.webm"));
+      res.writeHead(200, {
+        "Content-Type": "video/webm",
+        "Content-Length": String(video.byteLength),
+      });
+      res.end(video);
+      return;
+    }
+
+    if (
       pathname === "/companion" ||
       pathname === "/apps/companion/index.html"
     ) {
