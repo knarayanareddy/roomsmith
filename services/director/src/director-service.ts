@@ -68,6 +68,23 @@ function wordCount(value: string): number {
   return value.trim().split(/\s+/).filter(Boolean).length;
 }
 
+export const DEFAULT_AUTHORED_HINT_MAP: Readonly<
+  Record<string, readonly string[]>
+> = {
+  lighthouse_alignment: [
+    "Check the lens label, then compare its position with the book.",
+    "Place the red lens cup on the left side of the archive book or pick the left-hand remote option.",
+  ],
+  raise_the_shield: [
+    "Use an open palm held steady in frame or hold the remote gearbox control.",
+    "Hold the gearbox shield button for 750 ms, or enable no-timing mode for a single press.",
+  ],
+  lens_archive_sequence: [
+    "Start with the circle lens zone before placing the archive book in the square zone.",
+    "Place the blue lens in zone_lens first, then place the book in zone_archive to complete the PowerGrid circuit.",
+  ],
+};
+
 /**
  * Bounded LLM director service passing all model calls through `SharedModelGateway`
  * with coarse-only context, allowlisted hint variants, latency timeouts, and
@@ -80,7 +97,9 @@ export class BoundedDirectorService {
   private readonly maxWords: number;
 
   constructor(
-    authoredHints: Readonly<Record<string, readonly string[]>>,
+    authoredHints: Readonly<
+      Record<string, readonly string[]>
+    > = DEFAULT_AUTHORED_HINT_MAP,
     options: BoundedDirectorOptions = {},
   ) {
     const entries = Object.entries(authoredHints);

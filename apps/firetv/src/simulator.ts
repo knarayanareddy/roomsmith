@@ -5,9 +5,16 @@ import {
   type MatCalibrationInput,
   type NormalizedBoundingBox,
 } from "../../../packages/perception/src/index.js";
+import type {
+  PersistedPuzzleSessionSnapshot,
+  PuzzleSessionSnapshotStore,
+  StoredSnapshotEnvelope,
+} from "../../../packages/session-contracts/src/sqlite-session-store.js";
 import {
+  AdaptiveClueScheduler,
   BoundedDirectorService,
   type BoundedDirectorHintResult,
+  type ClueEvaluationResult,
   type DirectorErrorCode,
 } from "../../../services/director/src/index.js";
 import {
@@ -248,10 +255,14 @@ function makeValidOpenPalmLandmarks(): HandLandmarkPoint[] {
 export class FireTvWebSimulator {
   private readonly configService = new PlayerSessionConfigurationService();
   private readonly director: BoundedDirectorService;
+  private readonly clueScheduler: AdaptiveClueScheduler;
+  private readonly snapshotStore: PuzzleSessionSnapshotStore | null;
 
   private sessionId = "RS-DEMO-24";
   private readonly episodeId = "01000000000000000000000001";
   private readonly contentVersion = "1.0.0";
+  private readonly graphSha256 =
+    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
   private activeScreen: WireframeScreenId = "lobby";
   private playerCount = 2;
   private soloPath = false;
@@ -293,13 +304,41 @@ export class FireTvWebSimulator {
   private sequenceStartedAtMs: number | null = null;
   private holdStartedAtMs: number | null = null;
   private holdProgressMs = 0;
+  private puzzleStartedAtMs = 0;
   private manualSymbols: string[] = [];
   private selectedCandidateId: string | null = "north_star";
   private completedPuzzles: CompletedSimulatorPuzzle[] = [];
   private elapsedActiveTimeMs = 0;
 
-  constructor(director?: BoundedDirectorService) {
+  constructor(
+    director?: BoundedDirectorService,
+    snapshotStore?: PuzzleSessionSnapshotStore,
+  ) {
     this.director = director ?? new BoundedDirectorService(AUTHORED_HINT_MAP);
+    this.clueScheduler = new AdaptiveClueScheduler({ director: this.director });
+    this.snapshotStore = snapshotStore ?? null;
+    this.syncSchedulerForCurrentPuzzle(0);
+  }
+
+  private syncSchedulerForCurrentPuzzle(nowMs: number): void {
+    const current = this.currentPuzzleDef();
+    if (!current) return;
+    this.puzzleStartedAtMs = nowMs;
+    this.clueScheduler.startPuzzleTimer({
+      session_id: this.sessionId,
+      puzzle_id: current.puzzle_id,
+      episode_version: this.contentVersion,
+      now_ms: nowMs,
+      max_hint_level: current.authored_hints.length,
+      initial_attempt_count: this.attemptCounts[current.puzzle_id],
+      initial_hint_level: this.hintsUsed[current.puzzle_id],
+      transport: this.companionConnected ? "webrtc" : "cloud_relay",
+      accessibility_mode: this.accessibility.no_timing_mode
+        ? "no_timing"
+        : this.accessibility.reduced_motion
+          ? "reduced_motion"
+          : "standard",
+    });
   }
 
   configureLobby(input: {
@@ -405,6 +444,7 @@ export class FireTvWebSimulator {
       committed_sequence: this.stateSequence,
       completed_at_ms: atMs,
     });
+    this.clueScheduler.markPuzzleCompleted(puzzle.puzzle_id, atMs);
     this.holdStartedAtMs = null;
     this.holdProgressMs = 0;
     this.sequenceStep = 0;
@@ -413,6 +453,11 @@ export class FireTvWebSimulator {
     this.lastGuidance = `${puzzle.title} solved via ${path}.`;
     if (this.completedPuzzles.length === SIMULATOR_PUZZLES.length) {
       this.activeScreen = "completion";
+    } else {
+      this.syncSchedulerForCurrentPuzzle(atMs);
+    }
+    if (this.snapshotStore) {
+      this.snapshotStore.saveSnapshot(this.exportPersistedSnapshot(atMs), atMs);
     }
   }
 
@@ -739,6 +784,165 @@ export class FireTvWebSimulator {
     };
   }
 
+  async evaluateStallTimer(nowMs: number): Promise<{
+    evaluation: ClueEvaluationResult;
+    state: SimulatorStateSnapshot;
+  }> {
+    const current = this.currentPuzzleDef();
+    if (!current) {
+      throw new Error("no_active_puzzle_for_stall_timer");
+    }
+    this.elapsedActiveTimeMs = Math.max(this.elapsedActiveTimeMs, nowMs);
+    const evaluation = await this.clueScheduler.evaluateStall({
+      puzzle_id: current.puzzle_id,
+      now_ms: nowMs,
+    });
+    if (evaluation.triggered && evaluation.offer) {
+      this.hintsUsed[current.puzzle_id] = evaluation.current_hint_level;
+      this.lastHintText = evaluation.offer.director_result.hint.text;
+    }
+    return {
+      evaluation,
+      state: this.getState(),
+    };
+  }
+
+  exportPersistedSnapshot(
+    nowMs = this.elapsedActiveTimeMs,
+  ): PersistedPuzzleSessionSnapshot {
+    const current = this.currentPuzzleDef();
+    const nodeId =
+      this.completedPuzzles.length === SIMULATOR_PUZZLES.length
+        ? "node_completion"
+        : current?.puzzle_id === "lighthouse_alignment"
+          ? "node_lighthouse_alignment"
+          : current?.puzzle_id === "raise_the_shield"
+            ? "node_raise_the_shield"
+            : "node_lens_archive_sequence";
+    return {
+      session_id: this.sessionId,
+      episode_id: this.episodeId,
+      content_version: this.contentVersion,
+      graph_sha256: this.graphSha256,
+      node_id: nodeId,
+      state_sequence: this.stateSequence,
+      player_count: this.playerCount,
+      roles: [...this.roles],
+      accessibility_settings: structuredClone(this.accessibility),
+      object_kit: [...this.selectedObjectKit],
+      play_mat_version: "1.0.0",
+      puzzle_id: current ? current.puzzle_id : null,
+      attempt_count: current ? this.attemptCounts[current.puzzle_id] : 0,
+      hint_level: current ? this.hintsUsed[current.puzzle_id] : 0,
+      puzzle_started_at_ms: this.puzzleStartedAtMs,
+      stable_observation_ids: [],
+      last_observation_sequences: {},
+      sequence_step: this.sequenceStep,
+      sequence_started_at_ms: this.sequenceStartedAtMs,
+      completed_puzzles: this.completedPuzzles.map((c) => ({
+        puzzle_id: c.puzzle_id,
+        path: c.path,
+        committed_sequence: c.committed_sequence,
+        observation_sequence: c.path === "camera" ? c.committed_sequence : null,
+        completed_at_ms: c.completed_at_ms,
+      })),
+      hints_used: structuredClone(this.hintsUsed),
+      elapsed_active_time_ms: Math.max(this.elapsedActiveTimeMs, nowMs),
+      status:
+        this.completedPuzzles.length === SIMULATOR_PUZZLES.length
+          ? "completed"
+          : this.holdProgressMs > 0
+            ? "verifying"
+            : "awaiting_observation",
+      saved_at_ms: nowMs,
+    };
+  }
+
+  saveSnapshot(
+    store?: PuzzleSessionSnapshotStore,
+    nowMs = this.elapsedActiveTimeMs,
+  ): StoredSnapshotEnvelope {
+    const targetStore = store ?? this.snapshotStore;
+    if (!targetStore) {
+      throw new Error("snapshot_store_not_configured");
+    }
+    return targetStore.saveSnapshot(this.exportPersistedSnapshot(nowMs), nowMs);
+  }
+
+  restoreFromSnapshot(
+    snapshot: PersistedPuzzleSessionSnapshot,
+  ): SimulatorStateSnapshot {
+    if (
+      snapshot.episode_id !== this.episodeId ||
+      snapshot.content_version !== this.contentVersion
+    ) {
+      throw new Error("snapshot_version_mismatch");
+    }
+    this.sessionId = snapshot.session_id;
+    this.playerCount = snapshot.player_count;
+    this.soloPath = snapshot.player_count === 1;
+    this.roles = [...snapshot.roles];
+    this.selectedObjectKit = [...snapshot.object_kit];
+    this.accessibility = structuredClone(snapshot.accessibility_settings);
+    this.stateSequence = snapshot.state_sequence;
+    this.sequenceStep = snapshot.sequence_step;
+    this.sequenceStartedAtMs = snapshot.sequence_started_at_ms;
+    // Transient hold progress never carries across backgrounding or restart
+    this.holdStartedAtMs = null;
+    this.holdProgressMs = 0;
+    this.puzzleStartedAtMs = snapshot.puzzle_started_at_ms;
+    this.elapsedActiveTimeMs = snapshot.elapsed_active_time_ms;
+
+    this.completedPuzzles = snapshot.completed_puzzles.map((comp) => {
+      const def = SIMULATOR_PUZZLES.find((p) => p.puzzle_id === comp.puzzle_id);
+      if (!def) {
+        throw new Error(`unknown_completed_puzzle:${comp.puzzle_id}`);
+      }
+      return {
+        key: def.key,
+        puzzle_id: def.puzzle_id,
+        path: comp.path,
+        committed_sequence: comp.committed_sequence,
+        completed_at_ms: comp.completed_at_ms,
+      };
+    });
+
+    for (const key of [
+      "lighthouse_alignment",
+      "raise_the_shield",
+      "lens_archive_sequence",
+    ] as const) {
+      this.hintsUsed[key] = snapshot.hints_used[key] ?? 0;
+    }
+
+    const current = this.currentPuzzleDef();
+    if (current) {
+      this.attemptCounts[current.puzzle_id] = snapshot.attempt_count;
+      this.hintsUsed[current.puzzle_id] = snapshot.hint_level;
+      this.activeScreen = "puzzle";
+      this.syncSchedulerForCurrentPuzzle(snapshot.puzzle_started_at_ms);
+    } else {
+      this.activeScreen = "completion";
+    }
+    this.lastGuidance =
+      "Session restored from snapshot. Transient hold timer reset.";
+    return this.getState();
+  }
+
+  resumeFromSnapshotStore(
+    sessionId: string,
+    store?: PuzzleSessionSnapshotStore,
+    nowMs = 0,
+  ): SimulatorStateSnapshot | null {
+    const targetStore = store ?? this.snapshotStore;
+    if (!targetStore) {
+      throw new Error("snapshot_store_not_configured");
+    }
+    const loaded = targetStore.loadSnapshot(sessionId, nowMs);
+    if (!loaded) return null;
+    return this.restoreFromSnapshot(loaded);
+  }
+
   resetEpisode(): SimulatorStateSnapshot {
     this.activeScreen = "lobby";
     this.stateSequence = 0;
@@ -758,9 +962,11 @@ export class FireTvWebSimulator {
     this.sequenceStartedAtMs = null;
     this.holdStartedAtMs = null;
     this.holdProgressMs = 0;
+    this.puzzleStartedAtMs = 0;
     this.manualSymbols = [];
     this.completedPuzzles = [];
     this.elapsedActiveTimeMs = 0;
+    this.syncSchedulerForCurrentPuzzle(0);
     return this.getState();
   }
 
