@@ -1,0 +1,1082 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="RoomSmith Fire TV 1080p Web Simulator — Midnight Lighthouse cooperative escape room with Lighthouse, Gearbox, and PowerGrid deterministic puzzles.">
+  <title>RoomSmith — Fire TV Escape Room Web Simulator</title>
+  <link rel="stylesheet" href="/specs/ui/wireframes.css">
+  <link rel="stylesheet" href="/ui/theme.css">
+  <style>
+    :root {
+      color-scheme: dark;
+      --canvas: #081A26;
+      --surface: #102C3B;
+      --surface-alt: #173B4C;
+      --text: #F3EEE2;
+      --muted: #BDD3D4;
+      --primary: #D6A84F;
+      --on-primary: #13232C;
+      --accent: #7CC7C4;
+      --on-accent: #10272D;
+      --border: #607C86;
+      --focus: #F0C66D;
+      --success: #9AD9B6;
+      --warning: #F0C66D;
+      --danger: #F2A19C;
+      --info: #A6CBEA;
+      --font-display: Marcellus, Georgia, serif;
+      --font-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--text);
+      font-family: var(--font-body);
+      line-height: 1.4;
+    }
+    body.larger-text {
+      font-size: 112%;
+    }
+    .sim-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .sim-brand {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .sim-brand strong {
+      font-family: var(--font-display);
+      font-size: 1.45rem;
+      color: var(--primary);
+      letter-spacing: 0.03em;
+    }
+    .sim-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .sim-tab {
+      background: var(--surface-alt);
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .sim-tab[aria-selected="true"], .sim-tab:focus-visible {
+      border-color: var(--focus);
+      background: var(--primary);
+      color: var(--on-primary);
+      outline: none;
+    }
+    .sim-main {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px 28px 56px;
+    }
+    .tv-frame {
+      background: linear-gradient(180deg, #0b2231 0%, #081a26 100%);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
+    }
+    .tv-topbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 22px;
+    }
+    .tv-topbar h2, .tv-topbar h3 {
+      font-family: var(--font-display);
+      margin: 4px 0;
+      font-size: 1.75rem;
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.8rem;
+      color: var(--accent);
+      display: block;
+      font-weight: 700;
+    }
+    .tv-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 20px;
+    }
+    .tv-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .tv-panel.paper-clue {
+      background: #F3EEE2;
+      color: #13232C;
+      border-color: #8b7d62;
+    }
+    .tv-panel.paper-clue .eyebrow {
+      color: #465a61;
+    }
+    .tv-panel h4 {
+      font-family: var(--font-display);
+      margin: 6px 0 12px;
+      font-size: 1.3rem;
+    }
+    .tv-button {
+      background: var(--surface-alt);
+      color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 16px;
+      min-height: 48px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 100ms ease, border-color 100ms ease;
+    }
+    body.reduced-motion .tv-button {
+      transition: none;
+    }
+    .tv-button:hover, .tv-button:focus-visible {
+      border-color: var(--focus);
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+    .tv-button--primary {
+      background: var(--primary);
+      color: var(--on-primary);
+      border-color: var(--focus);
+    }
+    .tv-button--accent {
+      background: var(--accent);
+      color: var(--on-accent);
+      border-color: var(--accent);
+    }
+    .tv-button[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+    }
+    .status-pill--success { color: var(--success); border-color: var(--success); }
+    .status-pill--warning { color: var(--warning); border-color: var(--warning); }
+    .status-pill--danger { color: var(--danger); border-color: var(--danger); }
+    .status-pill--info { color: var(--info); border-color: var(--info); }
+    .puzzle-stepper {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .station-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: left;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .station-card.active {
+      border-color: var(--focus);
+      background: var(--surface-alt);
+    }
+    .station-card.solved {
+      border-color: var(--success);
+    }
+    .progress-track {
+      width: 100%;
+      height: 14px;
+      background: #06131c;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--primary));
+      width: 0%;
+      transition: width 150ms ease;
+    }
+    body.reduced-motion .progress-fill {
+      transition: none;
+    }
+    .tv-caption-box {
+      margin-top: 18px;
+      background: rgba(8, 26, 38, 0.92);
+      border-left: 4px solid var(--primary);
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 1.05rem;
+    }
+    .tv-action-rail {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .symbol-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 12px 0;
+    }
+    .check-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin: 10px 0;
+    }
+    .check-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .screen-section[hidden] {
+      display: none !important;
+    }
+    .diorama-box {
+      background: radial-gradient(circle at 50% 25%, #23536b 0%, #102C3B 60%, #081A26 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      min-height: 240px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .beam-visual {
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(214,168,79,0.15), rgba(240,198,109,0.95), rgba(124,199,196,0.2));
+      margin: 16px 0;
+    }
+    .hint-banner {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: #173B4C;
+      border: 1px solid var(--focus);
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <header class="sim-header">
+    <div class="sim-brand">
+      <strong>RoomSmith</strong>
+      <span>Fire TV 1080p Escape Room Simulator · Light the Last Lighthouse</span>
+    </div>
+    <nav aria-label="Simulator Wireframe Screens">
+      <ul class="sim-nav" role="tablist">
+        <li><button class="sim-tab" role="tab" data-screen-tab="lobby" aria-selected="true">01 · Lobby</button></li>
+        <li><button class="sim-tab" role="tab" data-screen-tab="room" aria-selected="false">02 · Room</button></li>
+        <li><button class="sim-tab" role="tab" data-screen-tab="puzzle" aria-selected="false">03 · Puzzles (3)</button></li>
+        <li><button class="sim-tab" role="tab" data-screen-tab="verification" aria-selected="false">04 · Companion Review</button></li>
+        <li><button class="sim-tab" role="tab" data-screen-tab="completion" aria-selected="false">05 · Completion</button></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="sim-main" id="main">
+    <div class="puzzle-stepper" aria-label="Three Episode Puzzles">
+      <button type="button" class="station-card active" data-puzzle-card="lighthouse">
+        <span class="eyebrow">Puzzle 1 · Lighthouse</span>
+        <strong>Lighthouse Beam Alignment</strong>
+        <div id="status-lighthouse" class="muted">Red Lens (`red_cup`) left of Book (`book`)</div>
+      </button>
+      <button type="button" class="station-card" data-puzzle-card="gearbox">
+        <span class="eyebrow">Puzzle 2 · Gearbox</span>
+        <strong>Gearbox &amp; Storm Shield</strong>
+        <div id="status-gearbox" class="muted">Open-Palm Signal (750 ms) or Remote Hold</div>
+      </button>
+      <button type="button" class="station-card" data-puzzle-card="powergrid">
+        <span class="eyebrow">Puzzle 3 · PowerGrid</span>
+        <strong>PowerGrid &amp; Archive Sequence</strong>
+        <div id="status-powergrid" class="muted">Blue Lens in Circle → Book in Square</div>
+      </button>
+    </div>
+
+    <!-- SCREEN 01: LOBBY -->
+    <section class="screen-section" id="screen-lobby" aria-labelledby="lobby-heading">
+      <div class="tv-frame">
+        <header class="tv-topbar">
+          <div>
+            <span class="eyebrow">SCREEN 01 / FIRE TV 1080P · FR-RS-002 &amp; FR-RS-003</span>
+            <h2 id="lobby-heading">Session Lobby &amp; Pre-Play Setup</h2>
+            <p>Configure player count, object kit allowlist, accessibility, and adult supervision before entering the lighthouse.</p>
+          </div>
+          <span class="status-pill status-pill--info" id="lobby-session-badge">Session RS-DEMO-24</span>
+        </header>
+
+        <div class="tv-grid">
+          <section class="tv-panel">
+            <span class="eyebrow">Crew &amp; Consent (FR-RS-002)</span>
+            <h4>Player Session Configuration</h4>
+            <div>
+              <label for="cfg-player-count"><strong>Player count (1–4):</strong> </label>
+              <select id="cfg-player-count" class="tv-button" style="min-height:38px;padding:4px 10px">
+                <option value="1">1 Player (Solo Path)</option>
+                <option value="2" selected>2 Players (Navigator + Observer)</option>
+                <option value="3">3 Players (Navigator + Observer + Keeper)</option>
+                <option value="4">4 Players (Full Crew)</option>
+              </select>
+            </div>
+            <div style="margin-top:12px">
+              <strong>Allowlisted Object Kit (Non-Color Labels):</strong>
+              <div class="check-row">
+                <label><input type="checkbox" value="red_cup" class="cfg-kit" checked disabled> Cup labeled red lens (Required)</label>
+                <label><input type="checkbox" value="blue_cup" class="cfg-kit" checked disabled> Cup labeled blue lens (Required)</label>
+                <label><input type="checkbox" value="book" class="cfg-kit" checked disabled> Book labeled archive (Required)</label>
+                <label><input type="checkbox" value="bottle" class="cfg-kit"> Bottle labeled condenser</label>
+                <label><input type="checkbox" value="spoon" class="cfg-kit"> Spoon labeled key lever</label>
+              </div>
+            </div>
+            <div style="margin-top:12px">
+              <strong>Accessibility Settings (FR-RS-010):</strong>
+              <div class="check-row">
+                <label><input type="checkbox" id="cfg-no-timing"> No-Timing Mode</label>
+                <label><input type="checkbox" id="cfg-reduced-motion"> Reduced Motion</label>
+                <label><input type="checkbox" id="cfg-captions" checked> Captions</label>
+                <label><input type="checkbox" id="cfg-remote-only"> Remote-Only Mode</label>
+                <label><input type="checkbox" id="cfg-larger-text"> Larger Text</label>
+              </div>
+            </div>
+            <div style="margin-top:12px">
+              <strong>Mandatory Safeguards:</strong>
+              <div class="check-row">
+                <label><input type="checkbox" id="cfg-adult" checked> Adult supervision confirmed (ages 8+)</label>
+                <label><input type="checkbox" id="cfg-privacy" checked> Local-only perception privacy notice acknowledged</label>
+              </div>
+            </div>
+            <div class="button-row">
+              <button type="button" class="tv-button tv-button--primary" id="btn-apply-config">Save Configuration &amp; Start Room</button>
+            </div>
+          </section>
+
+          <section class="tv-panel">
+            <span class="eyebrow">Add an Android Companion · Optional</span>
+            <h4>One-Time Pairing Credential</h4>
+            <p>Short code expires in 5 minutes and is single-use. WebRTC negotiates encrypted DataChannels only (`observations` &amp; `control`) with zero audio/video tracks.</p>
+            <div style="background:var(--surface-alt);padding:16px;border-radius:10px;border:1px solid var(--border);margin:14px 0">
+              <div class="eyebrow">One-Time Pairing Code</div>
+              <div id="lobby-pairing-code" style="font-size:2rem;font-weight:800;letter-spacing:0.18em;color:var(--focus)">B7R2K9</div>
+              <div id="lobby-companion-status" class="muted">Companion connected · Roles: navigator, observer</div>
+            </div>
+            <div class="button-row">
+              <button type="button" class="tv-button" id="btn-regen-code">Regenerate Code</button>
+              <button type="button" class="tv-button tv-button--accent" id="btn-continue-tv-only">Continue TV-Only</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 02: ROOM EXPLORATION -->
+    <section class="screen-section" id="screen-room" aria-labelledby="room-heading" hidden>
+      <div class="tv-frame">
+        <header class="tv-topbar">
+          <div>
+            <span class="eyebrow">SCREEN 02 / FIRE TV 1080P · LANTERN CONTROL ROOM</span>
+            <h2 id="room-heading">Restore the Lighthouse Signal</h2>
+            <p id="room-objective-text">Objective: Inspect the Keeper's stations and solve the Lighthouse, Gearbox, and PowerGrid mechanisms.</p>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center">
+            <span class="status-pill status-pill--success" id="room-conn-pill">Companion Ready</span>
+            <span class="status-pill" id="room-progress-pill">0 / 3 Solved</span>
+          </div>
+        </header>
+
+        <div class="tv-grid">
+          <div class="diorama-box" role="img" aria-label="Authored 2.5D lighthouse control room with Lantern Lens, Brass Gearbox, and Auxiliary PowerGrid">
+            <div>
+              <span class="eyebrow">Authored 2.5D Diorama · Zero Room Imagery</span>
+              <h4>Midnight Lighthouse Lantern Room</h4>
+              <p>Rain moves across the storm glass. Three mechanisms await deterministic verification: the <strong>Lighthouse Lens</strong>, the <strong>Brass Gearbox Shield</strong>, and the <strong>Auxiliary PowerGrid Conduit</strong>.</p>
+            </div>
+            <div class="beam-visual" aria-hidden="true"></div>
+            <div class="button-row">
+              <button type="button" class="tv-button tv-button--primary" id="btn-room-open-puzzle">Open Current Puzzle Station</button>
+              <button type="button" class="tv-button" id="btn-room-open-verify">Review Companion Evidence</button>
+            </div>
+          </div>
+
+          <section class="tv-panel">
+            <span class="eyebrow">Inspectable Clues</span>
+            <h4>Clue Journal (<span id="room-clue-count">1</span> collected)</h4>
+            <div class="button-row" style="flex-direction:column;align-items:stretch">
+              <button type="button" class="tv-button" data-inspect="Keeper's logbook (Lighthouse Alignment)">Inspect Keeper's Logbook · Lighthouse Lens</button>
+              <button type="button" class="tv-button" data-inspect="Brass compass (Gearbox Storm Shield)">Inspect Brass Compass · Gearbox Shield</button>
+              <button type="button" class="tv-button" data-inspect="PowerGrid schematic (Archive Conduit)">Inspect Engineer's Schematic · PowerGrid</button>
+            </div>
+            <p id="room-clues-list" style="margin-top:14px;color:var(--muted)">Collected: Keeper's logbook</p>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 03: CLUE & DETERMINISTIC PUZZLES (Lighthouse, Gearbox, PowerGrid) -->
+    <section class="screen-section" id="screen-puzzle" aria-labelledby="puzzle-heading" hidden>
+      <div class="tv-frame">
+        <header class="tv-topbar">
+          <div>
+            <span class="eyebrow" id="puzzle-eyebrow">SCREEN 03 / PUZZLE 1 OF 3 · LIGHTHOUSE</span>
+            <h2 id="puzzle-heading">Lighthouse Beam Alignment</h2>
+            <p id="puzzle-instruction">Place the cup labeled red lens to the left of the archive book and hold still for 1,000 ms.</p>
+          </div>
+          <span class="status-pill status-pill--info" id="puzzle-engine-status">PuzzleEngine · Awaiting Input</span>
+        </header>
+
+        <div class="tv-grid">
+          <article class="tv-panel paper-clue">
+            <span class="eyebrow" id="puzzle-clue-title">Keeper's Log · 17 October</span>
+            <h4 id="puzzle-station-title">Lighthouse Lantern Lens</h4>
+            <p id="puzzle-clue-body">Begin with the mark that points home. Align the red lens to the left of the archive book and hold it steady—or enter the three lighthouse signal symbols.</p>
+            <hr style="border:0;border-top:1px solid #b5aa93;margin:14px 0">
+            <div>
+              <strong>PlayMat Calibration (FR-RS-004):</strong>
+              <span id="cal-status-text">PlayMat calibrated and ready (4/4 ArUco markers)</span>
+              <div class="button-row">
+                <button type="button" class="tv-button" id="btn-cal-valid" style="color:#13232c;border-color:#60747b">Calibrate 4 Markers (Valid)</button>
+                <button type="button" class="tv-button" id="btn-cal-occlude" style="color:#13232c;border-color:#60747b">Simulate Missing Marker (AC-RS-005)</button>
+              </div>
+            </div>
+            <div id="hint-box" class="hint-banner" hidden></div>
+          </article>
+
+          <section class="tv-panel">
+            <span class="eyebrow">Physical PlayMat &amp; Accessible Remote Paths</span>
+            <h4>Verify Solution (Deterministic PuzzleEngine)</h4>
+
+            <div>
+              <strong>1. Physical Companion Observation (FR-RS-005 / FR-RS-006):</strong>
+              <div class="progress-track" aria-label="Hold to verify progress">
+                <div class="progress-fill" id="hold-progress-bar"></div>
+              </div>
+              <div class="button-row" id="physical-action-buttons">
+                <button type="button" class="tv-button tv-button--primary" id="btn-phys-hold-half">Hold Valid Observation (+500 ms)</button>
+                <button type="button" class="tv-button tv-button--primary" id="btn-phys-complete">Hold Full Duration (Complete Step)</button>
+                <button type="button" class="tv-button" id="btn-phys-wrong-order">Simulate Wrong Order / Unclear Color</button>
+              </div>
+            </div>
+
+            <hr style="border:0;border-top:1px solid var(--border);margin:16px 0">
+
+            <div>
+              <strong>2. Accessible Remote Fallback (FR-RS-010 / AC-RS-015):</strong>
+              <p id="fallback-prompt-text" class="muted" style="margin:4px 0 8px">Which arrangement places the red lens to the left of the archive book?</p>
+              <div class="button-row" id="remote-fallback-options"></div>
+            </div>
+
+            <hr style="border:0;border-top:1px solid var(--border);margin:16px 0">
+
+            <div>
+              <strong>3. Manual Three-Symbol Sequence Pad (`ui/WIREFRAMES.md` #puzzle):</strong>
+              <div class="symbol-grid">
+                <button type="button" class="tv-button" data-symbol="north_star">★ North star</button>
+                <button type="button" class="tv-button" data-symbol="open_sea">◯ Open sea</button>
+                <button type="button" class="tv-button" data-symbol="safe_harbor">△ Safe harbor</button>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+                <span id="symbol-slots-text">Slots: 1 · Empty | 2 · Empty | 3 · Empty</span>
+                <div class="button-row" style="margin-top:0">
+                  <button type="button" class="tv-button" id="btn-reset-symbols">Reset</button>
+                  <button type="button" class="tv-button tv-button--accent" id="btn-submit-symbols">Submit Sequence</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="tv-caption-box" id="tv-guidance-banner" role="status" aria-live="polite">
+          Place the red lens to the left of the archive book, or select an accessible remote fallback option.
+        </div>
+
+        <div class="tv-action-rail">
+          <span>Only the deterministic Fire TV PuzzleEngine can commit puzzle completion.</span>
+          <div class="button-row" style="margin-top:0">
+            <button type="button" class="tv-button" id="btn-request-hint">Request Director Hint (INT-RS-004)</button>
+            <button type="button" class="tv-button" id="btn-go-verify">Companion Evidence Review</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 04: COMPANION EVIDENCE REVIEW -->
+    <section class="screen-section" id="screen-verification" aria-labelledby="verify-heading" hidden>
+      <div class="tv-frame">
+        <header class="tv-topbar">
+          <div>
+            <span class="eyebrow">SCREEN 04 / ANDROID COMPANION · EVIDENCE REVIEW</span>
+            <h2 id="verify-heading">Uncertain Symbol &amp; Observation Review</h2>
+            <p>Recognition proposes structured candidates; it cannot spend an attempt or directly solve a puzzle.</p>
+          </div>
+          <span class="status-pill status-pill--warning">Partial Occlusion · Below 0.70 Auto-Threshold</span>
+        </header>
+
+        <div class="tv-grid">
+          <section class="tv-panel">
+            <span class="eyebrow">Ranked Structured Candidates (No Raw Camera Frame)</span>
+            <h4>Could not automatically verify one symbol</h4>
+            <p>Choose a candidate to forward to Fire TV review, retry local capture, or switch to manual input. Rejecting candidates never counts as a failed puzzle attempt.</p>
+            <div style="display:flex;flex-direction:column;gap:10px;margin:14px 0">
+              <button type="button" class="tv-button tv-button--primary" data-candidate="north_star" style="justify-content:space-between">
+                <span><strong>North star</strong> · Candidate 1 (below 0.70 threshold)</span>
+                <span>Confidence: <strong>0.61</strong></span>
+              </button>
+              <button type="button" class="tv-button" data-candidate="compass_rose" style="justify-content:space-between">
+                <span><strong>Compass rose</strong> · Candidate 2 (different silhouette)</span>
+                <span>Confidence: <strong>0.42</strong></span>
+              </button>
+            </div>
+            <div class="button-row">
+              <button type="button" class="tv-button tv-button--primary" id="btn-verify-accept">Accept Selected Candidate</button>
+              <button type="button" class="tv-button" id="btn-verify-retry">Retry Capture (No Penalty)</button>
+              <button type="button" class="tv-button tv-button--accent" id="btn-verify-manual">Type Symbol on Fire TV</button>
+            </div>
+          </section>
+
+          <section class="tv-panel">
+            <span class="eyebrow">Privacy &amp; Authority Boundary (SEC-RS-001 / SEC-RS-003)</span>
+            <h4>Evidence, Not Authority</h4>
+            <ul>
+              <li>Raw camera frames, hand landmarks, and audio never leave the companion device.</li>
+              <li>Companion-sent <code>puzzle.complete</code> messages are unconditionally rejected.</li>
+              <li>Camera unavailability always offers remote fallback within two remote actions.</li>
+            </ul>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCREEN 05: DETERMINISTIC COMPLETION & CASE REPORT -->
+    <section class="screen-section" id="screen-completion" aria-labelledby="completion-heading" hidden>
+      <div class="tv-frame">
+        <header class="tv-topbar">
+          <div>
+            <span class="eyebrow">SCREEN 05 / PUZZLEENGINE · SOLVED STATE</span>
+            <h2 id="completion-heading">Signal Restored — The Bay Can See the Way Home</h2>
+            <p>All three mechanisms (Lighthouse, Gearbox, PowerGrid) were deterministically verified.</p>
+          </div>
+          <span class="status-pill status-pill--success" id="completion-badge">3 of 3 Puzzles Solved</span>
+        </header>
+
+        <div class="tv-grid">
+          <div class="diorama-box">
+            <div>
+              <span class="eyebrow">Restored Midnight Lighthouse</span>
+              <h4>A steady golden beam crosses the dark bay</h4>
+              <p>The lamp turns once. Across the water, a harbor bell answers. Completion transitioned exclusively from committed <code>PuzzleEngine</code> events.</p>
+            </div>
+            <div class="beam-visual"></div>
+            <div class="button-row">
+              <button type="button" class="tv-button tv-button--primary" id="btn-replay-episode">Replay Chapter</button>
+            </div>
+          </div>
+
+          <section class="tv-panel">
+            <span class="eyebrow">Imagery-Free Case Report (FR-RS-013 / SEC-RS-005)</span>
+            <h4>Episode Case Report</h4>
+            <div id="case-report-summary">
+              <p>Solve all 3 puzzles (Lighthouse, Gearbox, PowerGrid) to generate the final metadata-only case report.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const PUZZLES = [
+        {
+          key: "lighthouse",
+          puzzle_id: "lighthouse_alignment",
+          title: "Lighthouse Beam Alignment",
+          station_name: "Lighthouse Lantern Lens",
+          clue_title: "Keeper's Log · 17 October",
+          clue_text: "Begin with the mark that points home. Align the red lens to the left of the archive book and hold it steady—or enter the three lighthouse signal symbols.",
+          instruction: "Place the cup labeled red lens to the left of the archive book and hold still for 1,000 ms.",
+          hold_ms: 1000,
+          fallback_interaction: "remote_single_choice",
+          fallback_prompt: "Which arrangement places the red lens to the left of the archive book?",
+          fallback_options: [
+            { option_id: "option_red_left", label: "Red lens on the left, archive book on the right" },
+            { option_id: "option_red_right", label: "Archive book on the left, red lens on the right" }
+          ],
+          correct_option_ids: ["option_red_left"],
+          authored_hints: [
+            "Check the lens label, then compare its position with the book.",
+            "Place the red lens cup on the left side of the archive book or pick the left-hand remote option."
+          ]
+        },
+        {
+          key: "gearbox",
+          puzzle_id: "raise_the_shield",
+          title: "Gearbox & Storm Shield Signal",
+          station_name: "Brass Gearbox & Storm Shutter",
+          clue_title: "Navigator's Brass Compass",
+          clue_text: "When the gale strikes the lantern housing, engage the brass gearbox by holding an open-palm signal for 750 ms—or hold the remote gearbox lever.",
+          instruction: "Raise an open palm comfortably in frame for 750 ms, or hold the remote gearbox shield control.",
+          hold_ms: 750,
+          fallback_interaction: "remote_hold",
+          fallback_prompt: "Hold the gearbox shield control for 750 ms, or select it once in no-timing mode.",
+          fallback_options: [
+            { option_id: "option_shield", label: "Engage brass gearbox & raise storm shield" }
+          ],
+          correct_option_ids: ["option_shield"],
+          authored_hints: [
+            "Use an open palm held steady in frame or hold the remote gearbox control.",
+            "Hold the gearbox shield button for 750 ms, or enable no-timing mode for a single press."
+          ]
+        },
+        {
+          key: "powergrid",
+          puzzle_id: "lens_archive_sequence",
+          title: "PowerGrid & Archive Conduit Sequence",
+          station_name: "Auxiliary PowerGrid & Archive Table",
+          clue_title: "Engineer's PowerGrid Schematic",
+          clue_text: "Route auxiliary power in strict order: energize the circle lens conduit with the blue lens first, then ground the archive book in the square zone within 30 seconds.",
+          instruction: "Place the blue lens in the circle zone (500 ms), then place the archive book in the square zone (500 ms) within 30 seconds.",
+          hold_ms: 500,
+          fallback_interaction: "remote_sequence",
+          fallback_prompt: "Which conduit action order restores the final PowerGrid beam?",
+          fallback_options: [
+            { option_id: "option_lens_then_archive", label: "1. Blue lens in Circle Zone → 2. Archive book in Square Zone" },
+            { option_id: "option_archive_then_lens", label: "1. Archive book in Square Zone → 2. Blue lens in Circle Zone" }
+          ],
+          correct_option_ids: ["option_lens_then_archive"],
+          authored_hints: [
+            "Start with the circle lens zone before placing the archive book in the square zone.",
+            "Place the blue lens in zone_lens first, then place the book in zone_archive to complete the PowerGrid circuit."
+          ]
+        }
+      ];
+
+      const state = {
+        activeScreen: "lobby",
+        playerCount: 2,
+        selectedKit: ["red_cup", "blue_cup", "book"],
+        accessibility: {
+          no_timing_mode: false,
+          reduced_motion: false,
+          captions: true,
+          remote_only: false,
+          larger_text: false
+        },
+        pairingCode: "B7R2K9",
+        calibrationValid: true,
+        clues: ["Keeper's logbook (Lighthouse Alignment)"],
+        completed: [],
+        holdProgressMs: 0,
+        sequenceStep: 0,
+        manualSymbols: [],
+        selectedCandidate: "north_star",
+        hintsUsed: { lighthouse_alignment: 0, raise_the_shield: 0, lens_archive_sequence: 0 },
+        lastHint: null,
+        guidance: "Configure session or jump to Puzzle 1 (Lighthouse), Puzzle 2 (Gearbox), or Puzzle 3 (PowerGrid).",
+        elapsedMs: 1200
+      };
+
+      function currentPuzzle() {
+        const done = new Set(state.completed.map((c) => c.key));
+        return PUZZLES.find((p) => !done.has(p.key)) || null;
+      }
+
+      function setScreen(screenId) {
+        state.activeScreen = screenId;
+        render();
+      }
+
+      function commitPuzzle(puzzle, path) {
+        state.completed.push({
+          key: puzzle.key,
+          puzzle_id: puzzle.puzzle_id,
+          path,
+          committed_sequence: state.completed.length + 1
+        });
+        state.holdProgressMs = 0;
+        state.sequenceStep = 0;
+        state.manualSymbols = [];
+        state.lastHint = null;
+        state.elapsedMs += 950;
+        state.guidance = puzzle.title + " committed by deterministic PuzzleEngine via " + path + ".";
+        if (state.completed.length === PUZZLES.length) {
+          state.activeScreen = "completion";
+        }
+        render();
+      }
+
+      function render() {
+        document.body.classList.toggle("reduced-motion", state.accessibility.reduced_motion);
+        document.body.classList.toggle("larger-text", state.accessibility.larger_text);
+
+        document.querySelectorAll("[data-screen-tab]").forEach((btn) => {
+          const id = btn.getAttribute("data-screen-tab");
+          btn.setAttribute("aria-selected", String(id === state.activeScreen));
+        });
+        ["lobby", "room", "puzzle", "verification", "completion"].forEach((id) => {
+          const sec = document.getElementById("screen-" + id);
+          if (sec) sec.hidden = id !== state.activeScreen;
+        });
+
+        const active = currentPuzzle();
+        PUZZLES.forEach((p) => {
+          const card = document.querySelector('[data-puzzle-card="' + p.key + '"]');
+          const statusEl = document.getElementById("status-" + p.key);
+          const solved = state.completed.find((c) => c.key === p.key);
+          if (card) {
+            card.classList.toggle("active", Boolean(active && active.key === p.key));
+            card.classList.toggle("solved", Boolean(solved));
+          }
+          if (statusEl) {
+            statusEl.textContent = solved
+              ? "Solved (" + solved.path.toUpperCase() + " · seq #" + solved.committed_sequence + ")"
+              : active && active.key === p.key
+                ? "Active Station"
+                : "Locked until prior step";
+          }
+        });
+
+        document.getElementById("lobby-pairing-code").textContent =
+          state.accessibility.remote_only ? "REMOTE-ONLY" : state.pairingCode;
+        document.getElementById("lobby-companion-status").textContent =
+          state.accessibility.remote_only
+            ? "Remote-Only Mode active · No companion required"
+            : "Companion connected · Player count: " + state.playerCount;
+
+        document.getElementById("room-progress-pill").textContent =
+          state.completed.length + " / 3 Solved";
+        document.getElementById("room-clue-count").textContent = String(state.clues.length);
+        document.getElementById("room-clues-list").textContent =
+          "Collected: " + state.clues.join(" · ");
+
+        const p = active || PUZZLES[PUZZLES.length - 1];
+        const idx = PUZZLES.findIndex((item) => item.key === p.key) + 1;
+        document.getElementById("puzzle-eyebrow").textContent =
+          "SCREEN 03 / PUZZLE " + idx + " OF 3 · " + p.key.toUpperCase();
+        document.getElementById("puzzle-heading").textContent = p.title;
+        document.getElementById("puzzle-instruction").textContent =
+          p.key === "powergrid"
+            ? p.instruction + " (Current step: " + (state.sequenceStep + 1) + " of 2)"
+            : p.instruction;
+        document.getElementById("puzzle-clue-title").textContent = p.clue_title;
+        document.getElementById("puzzle-station-title").textContent = p.station_name;
+        document.getElementById("puzzle-clue-body").textContent = p.clue_text;
+        document.getElementById("fallback-prompt-text").textContent = p.fallback_prompt;
+
+        document.getElementById("cal-status-text").textContent = state.calibrationValid
+          ? "PlayMat calibrated and ready (4/4 ArUco markers)"
+          : "Move the phone to show all four markers — remote fallback available";
+
+        const pct = Math.min(100, Math.round((state.holdProgressMs / Math.max(1, p.hold_ms)) * 100));
+        document.getElementById("hold-progress-bar").style.width = pct + "%";
+
+        const hintBox = document.getElementById("hint-box");
+        if (state.lastHint) {
+          hintBox.hidden = false;
+          hintBox.textContent = "Director Hint: " + state.lastHint;
+        } else {
+          hintBox.hidden = true;
+        }
+
+        const optionsContainer = document.getElementById("remote-fallback-options");
+        optionsContainer.innerHTML = "";
+        p.fallback_options.forEach((opt) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "tv-button tv-button--accent";
+          btn.textContent = opt.label;
+          btn.addEventListener("click", () => {
+            if (!currentPuzzle()) return;
+            if (p.correct_option_ids.includes(opt.option_id)) {
+              commitPuzzle(p, "remote");
+            } else {
+              state.holdProgressMs = 0;
+              state.guidance = "That option did not match the clue. Try the other arrangement.";
+              render();
+            }
+          });
+          optionsContainer.appendChild(btn);
+        });
+
+        const s1 = state.manualSymbols[0] || "Empty";
+        const s2 = state.manualSymbols[1] || "Empty";
+        const s3 = state.manualSymbols[2] || "Empty";
+        document.getElementById("symbol-slots-text").textContent =
+          "Slots: 1 · " + s1 + " | 2 · " + s2 + " | 3 · " + s3;
+
+        document.getElementById("tv-guidance-banner").textContent = state.guidance;
+
+        if (state.completed.length === PUZZLES.length) {
+          const totalHints = Object.values(state.hintsUsed).reduce((a, b) => a + b, 0);
+          document.getElementById("case-report-summary").innerHTML =
+            "<dl>" +
+            "<dt><strong>Episode Version</strong></dt><dd>1.0.0 (Light the Last Lighthouse)</dd>" +
+            "<dt><strong>Puzzle 1 (Lighthouse)</strong></dt><dd>Solved via " + state.completed[0].path + "</dd>" +
+            "<dt><strong>Puzzle 2 (Gearbox)</strong></dt><dd>Solved via " + state.completed[1].path + "</dd>" +
+            "<dt><strong>Puzzle 3 (PowerGrid)</strong></dt><dd>Solved via " + state.completed[2].path + "</dd>" +
+            "<dt><strong>Hints Used</strong></dt><dd>" + totalHints + " (no penalty)</dd>" +
+            "<dt><strong>Elapsed Active Time</strong></dt><dd>" + state.elapsedMs + " ms</dd>" +
+            "<dt><strong>Room Media / Landmarks Included</strong></dt><dd>false (metadata only)</dd>" +
+            "</dl>";
+        }
+      }
+
+      document.querySelectorAll("[data-screen-tab]").forEach((btn) => {
+        btn.addEventListener("click", () => setScreen(btn.getAttribute("data-screen-tab")));
+      });
+
+      document.querySelectorAll("[data-puzzle-card]").forEach((card) => {
+        card.addEventListener("click", () => setScreen("puzzle"));
+      });
+
+      document.getElementById("btn-apply-config").addEventListener("click", () => {
+        const adult = document.getElementById("cfg-adult").checked;
+        const privacy = document.getElementById("cfg-privacy").checked;
+        if (!adult || !privacy) {
+          state.guidance = "Adult supervision and local-only privacy notice must be confirmed before play.";
+          render();
+          return;
+        }
+        state.playerCount = Number(document.getElementById("cfg-player-count").value);
+        state.accessibility = {
+          no_timing_mode: document.getElementById("cfg-no-timing").checked,
+          reduced_motion: document.getElementById("cfg-reduced-motion").checked,
+          captions: document.getElementById("cfg-captions").checked,
+          remote_only: document.getElementById("cfg-remote-only").checked,
+          larger_text: document.getElementById("cfg-larger-text").checked
+        };
+        state.guidance = "Session configured (" + state.playerCount + " players). Explore the room or solve the active puzzle.";
+        setScreen("room");
+      });
+
+      document.getElementById("btn-regen-code").addEventListener("click", () => {
+        const alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+        let code = "";
+        for (let i = 0; i < 6; i += 1) {
+          code += alphabet[Math.floor(Math.random() * alphabet.length)];
+        }
+        state.pairingCode = code;
+        state.guidance = "Generated new one-time pairing code " + code + ".";
+        render();
+      });
+
+      document.getElementById("btn-continue-tv-only").addEventListener("click", () => {
+        state.accessibility.remote_only = true;
+        document.getElementById("cfg-remote-only").checked = true;
+        setScreen("room");
+      });
+
+      document.getElementById("btn-room-open-puzzle").addEventListener("click", () => setScreen("puzzle"));
+      document.getElementById("btn-room-open-verify").addEventListener("click", () => setScreen("verification"));
+
+      document.querySelectorAll("[data-inspect]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const item = btn.getAttribute("data-inspect");
+          if (item && !state.clues.includes(item)) state.clues.push(item);
+          state.guidance = "Inspected " + item + ".";
+          render();
+        });
+      });
+
+      document.getElementById("btn-cal-valid").addEventListener("click", () => {
+        state.calibrationValid = true;
+        state.guidance = "PlayMat calibrated and ready (all 4 ArUco markers verified).";
+        render();
+      });
+
+      document.getElementById("btn-cal-occlude").addEventListener("click", () => {
+        state.calibrationValid = false;
+        state.holdProgressMs = 0;
+        state.guidance = "Move the phone to show all four markers — candidate verification cancelled; remote fallback ready.";
+        render();
+      });
+
+      document.getElementById("btn-phys-hold-half").addEventListener("click", () => {
+        const p = currentPuzzle();
+        if (!p) return;
+        if (!state.calibrationValid) {
+          state.guidance = "Cannot verify physical observation while PlayMat markers are missing (AC-RS-005).";
+          render();
+          return;
+        }
+        state.holdProgressMs += 500;
+        if (state.holdProgressMs >= p.hold_ms) {
+          if (p.key === "powergrid" && state.sequenceStep === 0) {
+            state.sequenceStep = 1;
+            state.holdProgressMs = 0;
+            state.guidance = "PowerGrid Step 1 verified (blue lens in circle zone). Now place the archive book in the square zone.";
+          } else {
+            commitPuzzle(p, "camera");
+            return;
+          }
+        } else {
+          state.guidance = "Hold still… (" + state.holdProgressMs + "/" + p.hold_ms + " ms)";
+        }
+        render();
+      });
+
+      document.getElementById("btn-phys-complete").addEventListener("click", () => {
+        const p = currentPuzzle();
+        if (!p) return;
+        if (!state.calibrationValid) {
+          state.guidance = "Cannot verify physical observation while PlayMat markers are missing (AC-RS-005).";
+          render();
+          return;
+        }
+        if (p.key === "powergrid" && state.sequenceStep === 0) {
+          state.sequenceStep = 1;
+          state.holdProgressMs = 0;
+          state.guidance = "PowerGrid Step 1 verified (blue lens in circle zone). Click again to verify Step 2 (book in archive zone).";
+          render();
+          return;
+        }
+        commitPuzzle(p, "camera");
+      });
+
+      document.getElementById("btn-phys-wrong-order").addEventListener("click", () => {
+        const p = currentPuzzle();
+        if (!p) return;
+        state.holdProgressMs = 0;
+        if (p.key === "powergrid") {
+          state.sequenceStep = 0;
+          state.guidance = "Start with step 1: place the blue lens in the circle lens zone before archiving the book (AC-RS-011).";
+        } else {
+          state.guidance = "Cup color unclear—use the labeled cup or remote path (AC-RS-008).";
+        }
+        render();
+      });
+
+      document.querySelectorAll("[data-symbol]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const sym = btn.getAttribute("data-symbol");
+          if (sym && state.manualSymbols.length < 3) {
+            state.manualSymbols.push(sym);
+            render();
+          }
+        });
+      });
+
+      document.getElementById("btn-reset-symbols").addEventListener("click", () => {
+        state.manualSymbols = [];
+        state.guidance = "Manual symbol sequence reset.";
+        render();
+      });
+
+      document.getElementById("btn-submit-symbols").addEventListener("click", () => {
+        const p = currentPuzzle();
+        if (!p) return;
+        const ok =
+          state.manualSymbols.length === 3 &&
+          state.manualSymbols[0] === "north_star" &&
+          state.manualSymbols[1] === "open_sea" &&
+          state.manualSymbols[2] === "safe_harbor";
+        if (ok) {
+          commitPuzzle(p, "remote");
+        } else {
+          state.guidance = "Symbol sequence incomplete or out of order. Try North star → Open sea → Safe harbor.";
+          render();
+        }
+      });
+
+      document.getElementById("btn-request-hint").addEventListener("click", () => {
+        const p = currentPuzzle();
+        if (!p) return;
+        const used = state.hintsUsed[p.puzzle_id] || 0;
+        const nextLevel = Math.min(used + 1, p.authored_hints.length);
+        state.hintsUsed[p.puzzle_id] = nextLevel;
+        state.lastHint = p.authored_hints[nextLevel - 1];
+        state.guidance = "Bounded Director Hint (Level " + nextLevel + ") delivered without mutating puzzle state.";
+        render();
+      });
+
+      document.getElementById("btn-go-verify").addEventListener("click", () => setScreen("verification"));
+
+      document.querySelectorAll("[data-candidate]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.selectedCandidate = btn.getAttribute("data-candidate");
+          state.guidance = "Selected companion candidate: " + state.selectedCandidate;
+          render();
+        });
+      });
+
+      document.getElementById("btn-verify-accept").addEventListener("click", () => {
+        if (state.selectedCandidate === "north_star" && state.manualSymbols.length === 0) {
+          state.manualSymbols.push("north_star");
+        }
+        state.guidance = 'Companion candidate "' + state.selectedCandidate + '" returned to Fire TV review. PuzzleEngine validation still required.';
+        setScreen("puzzle");
+      });
+
+      document.getElementById("btn-verify-retry").addEventListener("click", () => {
+        state.guidance = "Retrying companion capture. Rejecting candidates does not count as a failed puzzle attempt.";
+        render();
+      });
+
+      document.getElementById("btn-verify-manual").addEventListener("click", () => {
+        state.guidance = "Switched to manual symbol / remote input on Fire TV.";
+        setScreen("puzzle");
+      });
+
+      document.getElementById("btn-replay-episode").addEventListener("click", () => {
+        state.completed = [];
+        state.holdProgressMs = 0;
+        state.sequenceStep = 0;
+        state.manualSymbols = [];
+        state.lastHint = null;
+        state.hintsUsed = { lighthouse_alignment: 0, raise_the_shield: 0, lens_archive_sequence: 0 };
+        state.guidance = "Episode reset. Ready to play again.";
+        setScreen("lobby");
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

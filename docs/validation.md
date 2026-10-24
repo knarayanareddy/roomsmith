@@ -8,17 +8,23 @@ Recorded 2026-10-23 on the local vertical-slice branch. Evidence covers pure Kot
 | --- | --- |
 | ESLint + Prettier | Passed |
 | TypeScript strict typecheck + Kotlin main/test compilation | Passed |
-| TypeScript unit tests | 17/17 passed: 6 graph/fallback, 6 structured-observation-ingress, and 5 director tests |
+| TypeScript unit tests | 32/32 passed: 6 graph/fallback, 5 solver/signed-bundle, 5 pairing/signaling/revocation/deletion, 5 perception/calibration, 6 structured-observation-ingress, and 5 director tests |
 | Kotlin puzzle-engine tests | 21/21 passed |
-| Canonical schema/contract tests | 4/4 passed; schema copy byte-identical |
+| Canonical schema/contract tests | 6/6 passed: 4 schema/drift tests and 2 cross-module content/pairing/signaling/perception/ingress contract tests |
 | Content-publication security test | 1/1 passed |
 | npm audit, moderate and above | No known vulnerabilities |
 | TypeScript build + Kotlin runtime JAR build | Passed |
 | Draft content CLI | Valid in `draft-development` mode |
 | Fixture walking paths | Structured candidate/stable-proposal/duplicate/invalid/forged-completion ingress, malformed-gateway authored fallback and media-context rejection, plus ordered three-puzzle remote completion, timed remote hold, authored hint, two atomic fixture-file saves/reopens, metadata-only report |
-| **Total tests** | **43/43 passed** |
+| **Total tests** | **60/60 passed** |
 
 The remote coordinator enforces authored puzzle order and answers, requires the 750 ms shield hold in standard mode, permits single-selection shield completion in no-timing mode, and keeps authored hints separate from puzzle transitions. The case-report type contains episode/version, completion metadata, hint levels, and supplied active time only; it has no room-media fields.
+
+The content compiler and signed-bundle store validate canonical JSON Schema, predicate/object/zone registries, unsafe instruction bans, hint ladder constraints, and full path enumeration across camera/remote, solo/multiplayer, standard/no-timing, and allowed object-kit subsets. Ed25519-signed manifests and bundles are verified before installation, and modified or unsigned bundles are rejected on launch while preserving the previous signed version for rollback.
+
+The pre-play setup, pairing, and signaling services validate player count, required object kit, accessibility settings, adult supervision, and privacy acknowledgement; enforce 5-minute single-use pairing codes with brute-force lockout and idempotency keys; deliver role clues or reveal them on the shared solo path; validate DataChannel-only SDP/ICE payloads (rejecting audio/video media tracks) with rate limiting and redacted logs; issue short-lived structured-data TURN credentials; activate explicit `cloud_relay` fallback when direct WebRTC fails; block revoked companions until new adult approval; and delete session snapshots and director context on request or 7-day retention expiry.
+
+The local companion perception pipeline evaluates 4-marker ArUco PlayMat calibration, classifies allowlisted objects and white-balanced HSV cup colors (`red`, `blue`, `unknown`), computes mat-normalized `left_of` and `inside_zone` predicates, evaluates 21-landmark `open_palm` gestures without face/emotion/identity/age inference, and emits structured 8 KB envelopes without raw frames or landmarks.
 
 The structured observation ingress enforces an 8 KB JSON envelope, session/device/puzzle/calibration/object-kit binding, monotonic sequences, exact-message dedupe, replay-conflict detection, and revocation. It rejects media keys (including camelCase variants) and companion `puzzle.complete`, emits metadata-only security events, and exposes fallback after invalidation. Stable messages remain proposals requiring authoritative TV hold verification; no ingress path commits a puzzle.
 
@@ -38,4 +44,4 @@ corepack pnpm validate:content -- --publish   # expected to fail for this draft
 
 ## Not evidenced
 
-No Kotlin/TypeScript coverage percentage or performance/false-accept campaign is claimed. Atomic fixture-file reopen is not an actual process-death/power-loss test; elapsed active time is fixture input, and the report is not rendered. No encrypted production storage, retention/deletion worker, Fire TV, companion, camera/perception, WebRTC/TURN, Bedrock/shared model gateway, Polly, durable backend persistence, signed content, full solver, rendered accessibility path, physical playtest, offline application run, deployment, or release gate was exercised.
+No Kotlin/TypeScript coverage percentage or performance/false-accept campaign is claimed. Atomic fixture-file reopen is not an actual process-death/power-loss test; elapsed active time is fixture input, and the report is not rendered. No encrypted production storage, retention/deletion worker, Fire TV, companion, camera/perception hardware, live WebRTC/TURN, Bedrock/shared model gateway, Polly, durable backend persistence, S3/CloudFront deployment, rendered accessibility path, physical playtest, offline application run, deployment, or release gate was exercised.
