@@ -64,6 +64,9 @@ class PuzzleEngine(
     var state: EngineState = initialState
         private set
     private val holds = mutableMapOf<String, HoldState>()
+    private val guidanceMessages = mutableMapOf<String, String>()
+
+    fun guidanceFor(puzzleId: String): String? = guidanceMessages[puzzleId]
 
     private fun resetHold(puzzleId: String) {
         holds.keys.removeAll { it.startsWith("$puzzleId/") }
@@ -150,9 +153,16 @@ class PuzzleEngine(
         if (!matches(requirement, observation)) {
             val matchesLaterStep = requirements.drop(step + 1).any { matches(it, observation) }
             resetPuzzle(puzzleId)
-            if (!matchesLaterStep && requirements.size == 1) resetHold(puzzleId)
+            if (matchesLaterStep) {
+                val targetSuffix = requirement.target?.let { " $it" } ?: ""
+                guidanceMessages[puzzleId] =
+                    "Start with step ${step + 1}: ${requirement.subject} ${requirement.predicate}$targetSuffix."
+            } else if (requirements.size == 1) {
+                resetHold(puzzleId)
+            }
             return emptyList()
         }
+        guidanceMessages.remove(puzzleId)
 
         if (step > 0 && !noTimingMode) {
             val startedAt = state.sequenceStartedAtMs[puzzleId]

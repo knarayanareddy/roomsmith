@@ -161,6 +161,10 @@ object PuzzleEngineTestSuite {
             val wrong = observation(puzzleId = "lens_archive_sequence", subject = "book", predicate = "inside_zone", target = "zone_archive", margin = null, overlap = 0.8, at = 0, sequence = 1)
             check(game.submit(sequenceRequirements, 500, wrong).isEmpty())
             check(game.state.sequenceSteps["lens_archive_sequence"] == null)
+            check(game.guidanceFor("lens_archive_sequence")?.contains("Start with step 1: blue_cup inside_zone zone_lens") == true)
+            val lens = observation(puzzleId = "lens_archive_sequence", subject = "blue_cup", predicate = "inside_zone", target = "zone_lens", margin = null, overlap = 0.8, at = 500, sequence = 2)
+            check(game.submit(sequenceRequirements, 500, lens).isEmpty())
+            check(game.guidanceFor("lens_archive_sequence") == null)
         }
         expect("ordered stable sequence completes") {
             val game = engine()

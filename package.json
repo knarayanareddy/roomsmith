@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "tsx scripts/walking-observations.ts && ./scripts/kotlin.sh run",
     "build": "tsc -p tsconfig.build.json && ./scripts/kotlin.sh build",
-    "lint": "eslint packages services scripts tests && prettier --check \"packages/**/*.ts\" \"services/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\" \"*.{json,mjs}\"",
+    "lint": "eslint apps packages services scripts tests && prettier --check \"apps/**/*.ts\" \"packages/**/*.ts\" \"services/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\" \"*.{json,mjs}\"",
     "typecheck": "tsc --noEmit && ./scripts/kotlin.sh typecheck",
     "test:unit": "vitest run tests/unit && ./scripts/kotlin.sh test",
     "test:contract": "vitest run tests/contract",
