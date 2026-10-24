@@ -199,15 +199,100 @@
   color: #bdd3d4;
 }
 
+/* Unified Split-Screen Escape Room Demo (Companion Left / Fire TV Right) */
+.split-screen-shell {
+  display: grid;
+  grid-template-columns: minmax(340px, 440px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .split-screen-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+.split-screen-pane {
+  background: rgba(16, 44, 59, 0.92);
+  border: 2px solid #607c86;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
+}
+
+.split-screen-pane--companion {
+  border-color: #7cc7c4;
+}
+
+.split-screen-pane--firetv {
+  border-color: #d6a84f;
+}
+
+.perspective-stage {
+  position: relative;
+  height: 220px;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 35%, #173b4c 0%, #081a26 85%);
+  border: 1px solid #607c86;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 640px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.perspective-mat {
+  width: 240px;
+  height: 150px;
+  border: 2px dashed #f0c66d;
+  border-radius: 10px;
+  background: rgba(16, 44, 59, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  transition:
+    transform 280ms ease,
+    border-color 280ms ease,
+    box-shadow 280ms ease;
+}
+
+.perspective-mat--skewed {
+  transform: rotateX(34deg) rotateZ(-14deg) scale(0.86);
+  border-color: #f2a19c;
+}
+
+.perspective-mat--aligned {
+  transform: rotateX(0deg) rotateZ(0deg) scale(1);
+  border-style: solid;
+  border-color: #9ad9b6;
+  box-shadow: 0 0 22px rgba(154, 217, 182, 0.35);
+}
+
+.webrtc-bridge-bar {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #06131c;
+  border: 1px solid #607c86;
+  font-size: 0.82rem;
+  color: #bdd3d4;
+}
+
 body.reduced-motion .clue-banner,
-body.reduced-motion .clue-banner-overlay {
+body.reduced-motion .clue-banner-overlay,
+body.reduced-motion .perspective-mat {
   animation: none !important;
   transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .clue-banner,
-  .clue-banner-overlay {
+  .clue-banner-overlay,
+  .perspective-mat {
     animation: none !important;
     transition: none !important;
   }

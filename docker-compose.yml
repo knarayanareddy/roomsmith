@@ -1,0 +1,117 @@
+name: roomsmith
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: roomsmith-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  signaling:
+    image: node:22-alpine
+    container_name: roomsmith-signaling
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: "8080"
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8080:8080"
+    command: >
+      sh -c "corepack enable && corepack pnpm install --frozen-lockfile &&
+      corepack pnpm exec tsx services/signaling/src/server.ts"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  firetv:
+    image: node:22-alpine
+    container_name: roomsmith-firetv
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: "5173"
+      REDIS_URL: redis://redis:6379
+      SIGNALING_WS_URL: ws://localhost:8080
+    ports:
+      - "5173:5173"
+    command: >
+      sh -c "corepack enable && corepack pnpm install --frozen-lockfile &&
+      corepack pnpm exec tsx apps/firetv/src/server.ts"
+    depends_on:
+      redis:
+        condition: service_healthy
+      signaling:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:5173/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  companion:
+    image: node:22-alpine
+    container_name: roomsmith-companion
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      NODE_ENV: development
+      HOST: 0.0.0.0
+      PORT: "5174"
+      SIGNALING_WS_URL: ws://localhost:8080
+      FIRETV_URL: http://localhost:5173
+    ports:
+      - "5174:5174"
+    command: >
+      sh -c "corepack enable && corepack pnpm install --frozen-lockfile &&
+      corepack pnpm exec tsx apps/companion/src/server.ts"
+    depends_on:
+      signaling:
+        condition: service_started
+      firetv:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:5174/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped

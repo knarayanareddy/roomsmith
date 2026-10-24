@@ -325,28 +325,66 @@
   </header>
 
   <main class="sim-main" id="main">
-    <aside class="clue-banner-overlay is-hidden" id="clue-banner-overlay" data-testid="clue-banner-overlay" role="status" aria-live="polite">
-      <div class="clue-banner clue-banner--level-1" id="clue-banner-box">
-        <div class="clue-banner__header">
-          <span class="clue-banner__badge" id="clue-banner-badge">Level 1 · Subtle Nudge</span>
-          <ol class="clue-banner__steps" aria-label="Progressive clue ladder">
-            <li class="clue-banner__step clue-banner__step--active" data-step-level="1">1. Subtle Nudge</li>
-            <li class="clue-banner__step" data-step-level="2">2. Directional Clue</li>
-            <li class="clue-banner__step" data-step-level="3">3. Direct Solution Guide</li>
-          </ol>
-        </div>
-        <p class="clue-banner__text" id="clue-banner-text"></p>
-        <div class="clue-banner__footer">
-          <div class="clue-banner__controls">
-            <button type="button" class="clue-banner__btn clue-banner__btn--focused" id="btn-banner-next" data-dpad-action="request_next">[D-Pad Up / H] Next Progressive Clue</button>
-            <button type="button" class="clue-banner__btn" id="btn-banner-dismiss" data-dpad-action="dismiss">[D-Pad Down / Back] Dismiss Banner</button>
-          </div>
-          <span class="clue-banner__dpad-hint">Remote D-Pad: Left/Right switch · Up/H request clue · Down/Back dismiss</span>
-        </div>
-      </div>
-    </aside>
+    <div class="split-screen-shell" id="split-screen-demo">
+      <!-- LEFT PANE: COMPANION CAMERA PERSPECTIVE & IN-MEMORY WEBRTC TRANSPORT -->
+      <aside class="split-screen-pane split-screen-pane--companion" id="companion-pane" aria-labelledby="companion-pane-heading">
+        <span class="eyebrow">LEFT · COMPANION CAMERA PERSPECTIVE VIEW</span>
+        <h3 id="companion-pane-heading" style="margin:4px 0 8px;font-family:var(--font-display)">Living Room PlayMat Calibrator</h3>
+        <p style="margin:0 0 10px;font-size:0.9rem;color:var(--muted)">
+          In-Memory WebRTC Mock DataChannel (<code>observations</code> + <code>control</code>, 0 media tracks). Align the living room PlayMat perspective to unlock physical verification on the Fire TV display.
+        </p>
 
-    <div class="puzzle-stepper" aria-label="Three Episode Puzzles">
+        <div class="perspective-stage" aria-label="Living room PlayMat perspective preview">
+          <div class="perspective-mat perspective-mat--aligned" id="perspective-mat-box">
+            <div style="display:flex;justify-content:space-between;width:100%;font-size:0.75rem;color:var(--accent)">
+              <span>[ArUco #0]</span><span>[ArUco #1]</span>
+            </div>
+            <strong id="perspective-stage-label" style="font-size:0.88rem;text-align:center">4/4 ArUco Markers Aligned · Ready</strong>
+            <div style="display:flex;justify-content:space-between;width:100%;font-size:0.75rem;color:var(--accent)">
+              <span>[ArUco #3]</span><span>[ArUco #2]</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button type="button" class="tv-button" id="btn-perspective-skew">Skewed Perspective (Uncalibrated)</button>
+          <button type="button" class="tv-button tv-button--accent" id="btn-perspective-align">Align Living Room Perspective (4/4 Markers)</button>
+        </div>
+
+        <div class="button-row">
+          <button type="button" class="tv-button" id="btn-simulate-inaction">Simulate Inaction (&gt;3m Stall → Clue Banner)</button>
+          <button type="button" class="tv-button tv-button--primary" id="btn-align-and-unlock">Align Perspective &amp; Unlock Active Puzzle</button>
+        </div>
+
+        <div class="webrtc-bridge-bar" id="webrtc-loopback-status">
+          <strong>In-Memory WebRTC Loopback:</strong> Connected · <code>m=application 9 UDP/DTLS/SCTP webrtc-datachannel</code> · Packets: <span id="webrtc-packet-count">1</span>
+        </div>
+      </aside>
+
+      <!-- RIGHT PANE: FIRE TV 1080P ESCAPE ROOM DISPLAY -->
+      <div class="split-screen-pane split-screen-pane--firetv" id="firetv-pane">
+        <aside class="clue-banner-overlay is-hidden" id="clue-banner-overlay" data-testid="clue-banner-overlay" role="status" aria-live="polite">
+          <div class="clue-banner clue-banner--level-1" id="clue-banner-box">
+            <div class="clue-banner__header">
+              <span class="clue-banner__badge" id="clue-banner-badge">Level 1 · Subtle Nudge</span>
+              <ol class="clue-banner__steps" aria-label="Progressive clue ladder">
+                <li class="clue-banner__step clue-banner__step--active" data-step-level="1">1. Subtle Nudge</li>
+                <li class="clue-banner__step" data-step-level="2">2. Directional Clue</li>
+                <li class="clue-banner__step" data-step-level="3">3. Direct Solution Guide</li>
+              </ol>
+            </div>
+            <p class="clue-banner__text" id="clue-banner-text"></p>
+            <div class="clue-banner__footer">
+              <div class="clue-banner__controls">
+                <button type="button" class="clue-banner__btn clue-banner__btn--focused" id="btn-banner-next" data-dpad-action="request_next">[D-Pad Up / H] Next Progressive Clue</button>
+                <button type="button" class="clue-banner__btn" id="btn-banner-dismiss" data-dpad-action="dismiss">[D-Pad Down / Back] Dismiss Banner</button>
+              </div>
+              <span class="clue-banner__dpad-hint">Remote D-Pad: Left/Right switch · Up/H request clue · Down/Back dismiss</span>
+            </div>
+          </div>
+        </aside>
+
+        <div class="puzzle-stepper" aria-label="Three Episode Puzzles">
       <button type="button" class="station-card active" data-puzzle-card="lighthouse">
         <span class="eyebrow">Puzzle 1 · Lighthouse</span>
         <strong>Lighthouse Beam Alignment</strong>
@@ -651,6 +689,8 @@
         </div>
       </div>
     </section>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -1101,6 +1141,70 @@
         state.guidance = "Clue banner dismissed via remote control.";
         render();
       }
+
+      let webrtcPackets = 1;
+      function bumpWebRtcPacketCount() {
+        webrtcPackets += 1;
+        const countEl = document.getElementById("webrtc-packet-count");
+        if (countEl) countEl.textContent = String(webrtcPackets);
+      }
+
+      document.getElementById("btn-perspective-skew").addEventListener("click", () => {
+        state.calibrated = false;
+        const matBox = document.getElementById("perspective-mat-box");
+        const stageLabel = document.getElementById("perspective-stage-label");
+        if (matBox) {
+          matBox.classList.remove("perspective-mat--aligned");
+          matBox.classList.add("perspective-mat--skewed");
+        }
+        if (stageLabel) {
+          stageLabel.textContent = "3/4 Markers · Skewed Living Room Perspective";
+        }
+        state.guidance = "Companion WebRTC DataChannel: PlayMat perspective skewed (reprojection error > 4.0 px). Physical verification gated.";
+        bumpWebRtcPacketCount();
+        render();
+      });
+
+      document.getElementById("btn-perspective-align").addEventListener("click", () => {
+        state.calibrated = true;
+        const matBox = document.getElementById("perspective-mat-box");
+        const stageLabel = document.getElementById("perspective-stage-label");
+        if (matBox) {
+          matBox.classList.remove("perspective-mat--skewed");
+          matBox.classList.add("perspective-mat--aligned");
+        }
+        if (stageLabel) {
+          stageLabel.textContent = "4/4 ArUco Markers Aligned · Ready";
+        }
+        state.guidance = "Companion WebRTC DataChannel: Living room PlayMat perspective aligned (4/4 ArUco markers, error 1.7 px).";
+        bumpWebRtcPacketCount();
+        render();
+      });
+
+      document.getElementById("btn-simulate-inaction").addEventListener("click", () => {
+        setScreen("puzzle");
+        bumpWebRtcPacketCount();
+        requestProgressiveClue();
+      });
+
+      document.getElementById("btn-align-and-unlock").addEventListener("click", () => {
+        state.calibrated = true;
+        const matBox = document.getElementById("perspective-mat-box");
+        const stageLabel = document.getElementById("perspective-stage-label");
+        if (matBox) {
+          matBox.classList.remove("perspective-mat--skewed");
+          matBox.classList.add("perspective-mat--aligned");
+        }
+        const puzzle = currentPuzzle();
+        if (stageLabel) {
+          stageLabel.textContent = "4/4 Markers Aligned · Solved " + puzzle.title;
+        }
+        bumpWebRtcPacketCount();
+        setScreen("puzzle");
+        state.holdProgressMs = puzzle.hold_ms;
+        state.bannerVisible = false;
+        completeCurrentPuzzle("in-memory WebRTC perspective alignment (" + puzzle.puzzle_id + ")");
+      });
 
       document.getElementById("btn-request-hint").addEventListener("click", requestProgressiveClue);
       document.getElementById("btn-banner-next").addEventListener("click", requestProgressiveClue);
